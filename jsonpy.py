@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 ##
-## $Id: jsonpy.py,v 1.3 2014/03/27 20:38:27 weiwang Exp $
+## $Id: jsonpy.py,v 1.5 2014/07/10 22:23:47 weiwang Exp $
 ##
-##
-## This program is licensed under the GPL v3.0, which is found at the URL below:
-##	http://opensource.org/licenses/gpl-3.0.html
-##
-## Copyright (c) 2011, 9Rivers.NET, LLC
-## All rights reserved.
+"""
+| This file is part of the c9r package
+| Copyrighted by Wei Wang <ww@9rivers.com>
+| License: https://github.com/ww9rivers/c9r/wiki/License
+
+Contains classes:
+
+- Null
+- Thingy
+"""
 
 import json
 
@@ -15,17 +19,6 @@ import json
 class Null(object):
     '''
     A null object, to get the inner __dict__.
-
-    >>> nx = Null()
-    >>> nx.items()
-    []
-    >>> nx.__repr__()
-    "<class '__main__.Null'>({})"
-    >>> nx.__str__()
-    '{}'
-    >>> nx.new_attr = 'abcde'
-    >>> nx.new_attr
-    'abcde'
     '''
     def dict(self):
         '''Return self as a dict -- the inner dict.'''
@@ -44,7 +37,8 @@ class Null(object):
 
     def update(self, data):
         '''Update this object with attribute/value pairs given in a dict.'''
-        self.__dict__.update(data)
+        if data:
+            self.__dict__.update(dict(data))
 
     def __getitem__(self, name):
         return self.__dict__.__getitem__(name)
@@ -76,31 +70,22 @@ class Thingy(Null):
     '''
     Build a Python object with given parameters as attributes.
 
-    >>> xo = Thingy(dict(a='aaa', b='bbb'))
-    >>> xo.a
-    'aaa'
-    >>> xo.items()
-    [('a', 'aaa'), ('b', 'bbb')]
-    >>> from StringIO import StringIO
-    >>> x1 = Thingy(StringIO('{ "a" : "A-value", "b" : "B-value" }'))
-    >>> x1.b
-    'B-value'
-    >>> isinstance(x1, dict)
-    False
-    >>> isinstance(x1, object)
-    True
-    >>> isinstance(x1, Null)
-    True
+    @param dconf        Optional default configuration file name, or a readable object.
+    @param defval       Optional default values, that is fed to dict() for initializing this object.
     '''
-    def __init__(self, dconf={}, defval={}):
+    def __init__(self, dconf=None, defval=None):
         if isinstance(dconf, basestring):
             newconf = load_file(dconf, defval)
         elif hasattr(dconf, 'read') and callable(dconf.read):
             newconf = load(dconf, defval)
         elif isinstance(dconf, Null):
             newconf = dconf.dict()
+        elif not dconf is None:
+            newconf = dict(dconf)
+        elif not defval is None:
+            newconf = dict(defval)
         else:
-            newconf = dict(dconf if dconf else defval)
+            newconf = dict()
         for xk, xv in newconf.iteritems():
             if isinstance(xv, unicode):
                 xv = xv.encode('utf-8')
@@ -109,17 +94,19 @@ class Thingy(Null):
             newconf[xk] = xv
         self.__dict__.update(newconf)
 
-def load(fp, defval={}):
+def load(fp, defval=None):
     '''
     Load an IO object (fp) that holds JSON data.
 
     Optionally, default values may be specified in (defval).    
     '''
+    if defval is None:
+        defval = dict()
     newconf = dict(defval.dict() if isinstance(defval, Null) else defval)
     newconf.update(json.load(fp, object_hook=_decode_dict))
     return newconf
 
-def load_file(fname, defval={}):
+def load_file(fname, defval=None):
     '''
     Load a file with the given file name (fname), containing JSON data.
 
@@ -159,4 +146,4 @@ def _decode_list(data):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
+    doctest.testfile('test-jsonpy.txt')

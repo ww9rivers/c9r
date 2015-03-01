@@ -89,13 +89,7 @@ class PatternList(list):
 
 
 class SecureShell(object):
-    '''
-    A configured paramiko-based SSH command line utility for running commands
-    on a remote host.
-
-    Arguments:
-        0       Name or IP address of a host;
-        1+      Command(s) to run on the remote host.
+    '''An interactive SSH client object with configuration.
     '''
     def close(self):
         '''Close the current client connection.
@@ -166,7 +160,7 @@ class SecureShell(object):
     def do_send(self, msg):
         '''Send a given msg to the current connection.
         '''
-        return seld.sendline(msg)
+        return self.sendline(msg)
 
     def expect(self, patterns, timeout=None):
         '''Read from the channel for any of the specified patterns.
@@ -321,7 +315,6 @@ class SecureShell(object):
                 config_file = os.path.expanduser('~/.ssh/cli-conf.json')
             )
         self.cfg = Config(SecureShell.CFG, **kwargs)
-        logger.debug('self.cfg = {0}.'.format(self.cfg))
         self.timeout = self.config('timeout', 10)
         self.default = self.config('default', 'default.default')
         logger.debug('Default profile.category = {0}.'.format(self.default))
@@ -340,10 +333,23 @@ class SecureShell(object):
         '''Ignore any extra command line parameters.'''
         pass
 
+class ISSH(Command):
+    '''A configured paramiko-based SSH command line utility for running commands
+    on a remote host.
+
+    Arguments:
+        0       Name or IP address of a host;
+        1+      Command(s) to run on the remote host.
+
+    Also, the SecureShell object in this utility uses "~/.ssh/cli-conf.json" as
+    its configuration file to provide login information to different groups of
+    devices.
+    '''
+
 def main():
     '''Use SecureShell as command runner.
     '''
-    cmd = Command()
+    cmd = ISSH()
     if cmd.dryrun: # Run unit test
         import doctest
         doctest.testfile('test/issh.txt')
@@ -354,14 +360,10 @@ def main():
     logger.debug('Connecting to {0}'.format(host))
     ssh = SecureShell()
     results = ssh.run(host, cmd.args[1:])
-    logger.debug('Get {0} results'.format(len(results)))
+    logger.debug('Got {0} result(s)'.format(len(results)))
     for cmd,output in results.iteritems():
         print cmd
-        sio = StringIO(output)
-        while True:
-            line = sio.readline()
-            if not line:
-                break
+        for line in StringIO(output):
             print('\t'+line.rstrip())
 
 if __name__ == '__main__':

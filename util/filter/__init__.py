@@ -3,8 +3,7 @@
 # $Id: __init__.py,v 1.6 2015/01/07 19:44:25 weiwang Exp $
 #
 
-import gevent
-from gevent.queue import Empty, JoinableQueue
+from Queue import Empty, Queue
 from c9r.pylog import logger
 
 
@@ -22,15 +21,18 @@ class Filter(object):
         '''
         klass = type(self).__name__
         logger.debug('{0}: closing, que size = {1}'.format(klass, self.que.qsize()))
-        # self.join()
-        joint = self.next_filter
-        if callable(getattr(joint, 'close', None)):
-            logger.debug('{0}: closing+/-joining next filter = {1}'.format(klass, type(joint).__name__))
-            if callable(getattr(joint, 'join', None)):
-                joint.join()
-            if None:
-                joint.close()
+        self.__call__()
+        try_next('close')
         logger.debug('{0}: closed'.format(klass))
+
+    def flush(self):
+        '''Write everything to the next filter.
+        '''
+        while True:
+            try:
+                self.next_filter.write(self.next())
+            finally:
+                break
 
     def join(self):
         if self.que:
@@ -47,39 +49,40 @@ class Filter(object):
     def not_open(self):
         '''Returns True if this Filter is not yet open.
         '''
-        return self.que != None and self.greent is None
+        return self.que is None
 
     def open(self):
         '''To start a filter thread/greenlet.
         '''
         if self.not_open():
-            self.greent = gevent.spawn(self)
-            logger.debug('{0}: greenlet spawned -> {1}'.format(type(self).__name__, type(self.next_filter).__name__))
+            self.que = Queue()
+            logger.debug('{0}: open - Queue created'.format(type(self).__name__))
         return self
+
+    def try_next(self, act, *args, **kwargs):
+        '''Perform /act/ on self.input if it exists.
+        '''
+        joint = self.next_filter
+        fact = getattr(self.input, act, None)
+        if callable(fact):
+            return fact(*args, **kwargs)
+        return Empty
 
     def write(self, data):
         '''Interface for caller to write to this filter.
         Basically, /data/ is put on queue for self in mult-thread mode;
         Or written to the next filter.
         '''
-        if self.queue:
+        if self.que:
             self.que.put(data)
         else:
             self.next_filter.write(data)
+        self.flush()
 
     def __call__(self):
         '''Loop through all queued data and write out to the next filter.
         '''
-        while True:
-            try:
-                joint = self.next_filter
-                data = self.next()
-                joint.write(data)
-                if None and type(joint).__name__ == 'file':
-                    joint.flush()
-                    logger.debug('{0}: writing {1} bytes to file: {2}'.format(type(self).__name__, len(data), data))
-            finally:
-                break
+        self.flush()
         self.que.task_done()
 
     __enter__ = open
@@ -89,7 +92,7 @@ class Filter(object):
         '''To allow this object to be used with "with".'''
         self.close()
 
-    def __init__(self, next_filter, mt=False):
+    def __init__(self, next_filter):
         '''Initialize this filter.
 
         The /next_filter/ is an object that has a next() function and a write() function, which
@@ -99,8 +102,7 @@ class Filter(object):
 
         If /mt/ is True, then use Greenlet threading (multi-threading); Otherwise, single thread.
         '''
-        self.greent = None
-        self.que = JoinableQueue() if mt else None
+        self.que = None
         if callable(getattr(next_filter, 'open', None)):
             next_filter = next_filter.open()
         self.next_filter = next_filter

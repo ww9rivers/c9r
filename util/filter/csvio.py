@@ -109,7 +109,7 @@ class Writer(Filter):
         '''
         Filter.__init__(self, next_filter)
         if write_header and header:
-            self.que.put(','.join(header)+'\n')
+            next_filter.write(','.join(header)+'\n')
             logger.debug('Wrote CSV header: {0}'.format(header))
         self.writer = csv.DictWriter(self.Shim(self), header, extrasaction='ignore')
 

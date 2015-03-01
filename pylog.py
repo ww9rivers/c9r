@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: pylog.py,v 1.2 2014/05/21 19:51:11 weiwang Exp $
+# $Id: pylog.py,v 1.5 2015/01/07 19:55:43 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
@@ -27,14 +27,15 @@ import logging.config
 import logging.handlers as Handlers
 import __main__ as main
 
+script_file = getattr(main, '__file__', None)
 def_config = {
-    'file': '/etc/python/logging.conf',
-    'name': os.path.basename(main.__file__)
+    'config': '/etc/python/logging.conf',
+    'name': os.path.basename(script_file) if script_file else format(main)
     }
-CONFIG = None
+CONFIG = globals().get('CONFIG', None)
 def_format = "%(asctime)s %(levelname)s %(module)s.%(funcName)s:%(lineno)d %(message)s"
 def_level = 'WARN'
-logger = None
+logger = globals().get('logger', None)
 
 def config(conf=None, defaults=None, disable_existing_loggers=True):
     '''Configuring the Python logging system.
@@ -50,7 +51,7 @@ def config(conf=None, defaults=None, disable_existing_loggers=True):
     conf = conf.get('logging', def_config) if conf else def_config
     if conf is None:
         conf = def_config
-    fname = conf.get('file', def_config['file'])
+    fname = conf.get('config', def_config['config'])
     name = conf.get('name', def_config['name'])
     try:
         logging.config.fileConfig(fname, defaults, disable_existing_loggers)
@@ -113,6 +114,11 @@ def get_logger(name=None):
         status = 'created, handler leve = {0}'.format(level)
     logger.debug(str(name) + ' logger ' + status)
     return logger
+
+def set_debug():
+    '''Set logging level to DEBUG.
+    '''
+    set_level(logging.DEBUG)
 
 def set_level(level=logging.INFO):
     '''Setting the logger's logging activity to a given level.

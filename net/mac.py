@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##
-## $Id: mac.py,v 1.1 2012/10/15 20:54:09 weiwang Exp $
+## $Id: mac.py,v 1.2 2015/01/07 20:02:28 weiwang Exp $
 ##
 ##
 ## This program is licensed under the GPL v3.0, which is found at the URL below:
@@ -63,10 +63,7 @@ class MACFormat:
     @staticmethod
     def none(mac):
         ''' 112233445566 '''
-        str = ''
-        for x in MACFormat.delims.split(mac.lower()):
-            str += x
-        return str
+        return ''.join(MACFormat.delims.split(mac.lower()))
 
 
 if __name__ == '__main__':

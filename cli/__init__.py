@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#       $Id: __init__.py,v 1.6 2014/08/27 17:54:14 weiwang Exp $
+#       $Id: __init__.py,v 1.7 2015/01/07 20:00:57 weiwang Exp $
 #
 ## This program is licensed under the GPL v3.0, which is found at the URL below:
 ##	http://opensource.org/licenses/gpl-3.0.html
@@ -106,8 +106,8 @@ class CLI(object):
                                   if isinstance(self.regex, list)
                                   else [self.regex] if isinstance(self.regex, basestring) else [])]
         self.re = [re.compile(rex) for rex in regexs]
-        [ logger.debug('Regex = {0}'.format(rex)) for rex in regexs ]
-        logger.debug('Total regex = {0}'.format(len(self.re)))
+        #[ logger.debug('Regex = {0}'.format(rex)) for rex in regexs ]
+        #logger.debug('Total regex = {0}'.format(len(self.re)))
         # Default regex'es:
         self.headrex = re.compile('(\s*\w+\s*)')  # Table head marker
         self.efilters = [ re.compile(x) for x in  # exclusion filters

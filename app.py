@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: app.py,v 1.3 2014/03/27 20:38:27 weiwang Exp $
+# $Id: app.py,v 1.10 2015/01/15 14:56:00 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
@@ -20,92 +20,109 @@ is provided ``as is'' without express or implied warranty.
 '''
 
 import getopt, json, os, sys
-import logging, logging.handlers
-from twisted.python import log, logfile
-from c9r.jsonpy import Thingy
-from c9r.logger import LevelFileLogObserver
+from c9r.jsonpy import Null, Thingy
+import logging
+import c9r.pylog
+from c9r.pylog import logger
 
-class Command:
+if logger is None:
+    logger = c9r.pylog.get_logger()
+
+
+class Command(object):
     """
-    Usage:  %s  [options]
+    Usage:  {0}  [options]
 
     Options:  -h | --help                  Print this help message
               -c | --config=<config-file>  Specify a configuration file.
-                                           Default is [%s]
+                                           Default is {1}
               -d | --debug                 Debug mode.
               -p | --path=<add-path>       Addition to the PYTHONPATH for modules.
               -t | --test-config           Test the configuration only.
-
+              -v | --verbose               Settting verbose output mode.
+{2}
     A configuration file is a text file in the JSON format, used to configure this
     application.
     """
     defaults = {}
-    def_conf = ''
-    short_opt = "hc:dp:t"
-    long_opt = ["help", "config=", "debug", "path=", "test-config"]
+    def_conf = []
+    dryrun = False
+    short_opt = "hc:dp:tv"
+    long_opt = ["help", "config=", "debug", "path=", "test-config", "verbose"]
 
-    def config(self):
+    def clear_config(self):
+        '''Clear configuration in self.CONF to start a clean slate, i.e. in a
+        child process running another app.
         '''
-        Get the configuration of this app.
+        Command.CONF = None
+
+    def config(self, item=None, default=None):
+        '''Get the configuration of this app.
+
+        /item/     Optional config item name.
+        /default/  Optional default value.
+
+        Returns self.CONF when no item is specified;
+        Returns self.CONF[item] if all exists;
+        Returns default otherwise.
+
+        Caution: Configuration in this class and all its subclasses are made
+        singleton to the c9r.app.Command class. Therefore, it may be necessary
+        for a cubclass to assertain about overwriting a configuration item.
         '''
-        return self.CONF
+        conf = getattr(self, 'CONF', None)
+        if item is None:
+            return conf
+        if conf is None:
+            return default
+        return conf.get(item, default)
+
+    def exit_dryrun(self, ecode=0):
+        '''Exit with optional /ecode/ if dry-run.
+        '''
+        if self.dryrun:
+            logger.debug("{0}: Dry run. Exiting!".format(self))
+            sys.exit(ecode)
 
     def log_debug(self, msg):
-        log.msg(msg, logLevel=logging.DEBUG)
+        logger.debug(msg)
 
-
-    def log_error(self, msg):
-        log.msg(msg, logLevel=logging.ERROR)
+    def log_error(self, msg=None):
+        if msg is None:
+            msg = format(sys.exc_info()[0])
+        logger.error(msg)
 
     def log_info(self, msg):
-        log.msg(msg, logLevel=logging.INFO)
+        logger.info(msg)
 
-    def logging(self, logc):
-        '''
-        Setup logging for this Command object for debugging or information.
-
-        @param  logc    Configuration object for logging.
-        '''
-        if not logc: return
-        name = logc.get('name')
-        if name is None: return
-
-        level = getattr(logc, 'level', 'INFO')
-        level = getattr(logging, level.upper())
-        rotation = logc.get('rotation', 'daily')
-        path = logc.get('path', '/var/log')
-        mode = logc.get("mode")
-        mode = int(mode, 8) if isinstance(mode, str) and mode[0:2].lower() == '0o'\
-            else (mode if isinstance(mode, int) else 0o600)
-        xf = logfile.DailyLogFile(name, path, defaultMode=mode) if rotation == 'daily'\
-            else logfile.LogFile(name, path, rotateLength=rotation*1000,
-                                 maxRotatedFiles=100)
-        observer = LevelFileLogObserver(xf, level)
-        log.addObserver(observer.emit)
-
-    def usage(self, params=0):
+    def usage(self, params=None):
         """
         Print the __doc__ string of this app. An app subclassing c9r.app.Command should
         place the usage information under the class.
+
+        If a subclass' __doc__ does not start with "Usage:", the text will be used as
+        parameter 2 in forming the usage message.
         """
-        if not params:
-            params = (sys.argv[0], self.def_conf)
+        global logger
+        if params is None:
+            params = [sys.argv[0], self.def_conf]
         docstr = self.__doc__
         if docstr:
             docstr = docstr.strip()
-        if not docstr:
+        if docstr and docstr.startswith('Usage:'):
+            params.append('\n')
+        else:
+            params.append('\n    '+docstr+"\n" if docstr else '')
             docstr = Command.__doc__
-        sys.stderr.write("\n"+(docstr % params)+"\n\n")
+        sys.stderr.write("\n"+docstr.format(*params)+"\n\n")
 
     def __call__(self):
         assert False, "Application module needs to define __call__()."
 
     def __init__(self, short_opts=0, long_opts=0):
         '''
-        Tests:
-
-        >>> app = Command()
         '''
+        global logger
         try:
             opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or self.short_opt, long_opts or self.long_opt)
         except getopt.GetoptError, err:
@@ -114,12 +131,15 @@ class Command:
             self.usage()
             sys.exit(1)
 
+        if self.config() is None:
+            Command.CONF = Thingy(self.defaults)
         self.args = args
         conffile = self.def_conf
         if isinstance(conffile, basestring):
-            conffile = [conffile]
+            conffile = list([conffile])
+        elif not isinstance(conffile, list):
+            conffile = list([])
         self.debug = False
-        self.dryrun = False
         for o, a in opts:
             if o in ("-h", "--help"):
                 self.usage()
@@ -128,37 +148,36 @@ class Command:
                 conffile.append(a)
             elif o in ("-d", "--debug"):
                 self.debug = True
-                log.startLogging(sys.stdout)
+                c9r.pylog.set_level(logging.DEBUG)
             elif o in ("-p", "--path"):
                 sys.path += a.split(':')
             elif o in ('-t', '--test-config'):
-                self.dryrun = True
+                Command.dryrun = True
+            elif o in ('-v', '--verbose'):
+                self.verbose = True
             else:
-                self.__opt_handler(o, a)
+                self._opt_handler(o, a)
 
-        conf = self.defaults
+        conf = self.config()
         for cfile in conffile:
             try:
-                self.log_debug("%s: reading config file '%s'" % (self.__class__,cfile))
-                conf = Thingy(cfile, conf)
+                logger.debug('reading config file "{0}"'.format(cfile))
+                conf = Thingy(os.path.expanduser(cfile), conf)
             except IOError:
-                self.log_debug("%s: config file '%s' not found?" % (self.__class__,cfile))
-                pass
+                logger.debug("%s: config file '%s' not found?" % (self.__class__, cfile))
             except:
-                log.err()
-                print "%s: Error loading configuration." % (sys.argv[0])
-                raise
-        if hasattr(self, 'CONF'):
-            self.CONF.update(conf)
-        else:
-            self.CONF = conf
-        paths = self.CONF.get('path','')
+                if self.debug:
+                    raise
+                sys.exit("Error: %s: Error loading configuration '%s'." % (sys.argv[0], cfile))
+        if conf != None and conf != Command.CONF:
+            Command.CONF = conf
+        paths = self.config('path','')
         for apath in paths.split(':'):
-            if os.path.isdir(apath):
+            if os.path.isdir(apath) and not apath in sys.path:
                 sys.path.append(apath)
-        self.logging(self.CONF.get('logging'))
+        c9r.pylog.config(conf)
 
-    def __opt_handler(self, opt, val):
+    def _opt_handler(self, opt, val):
         '''
         Default option handler -- an option is considered unhandled if it reaches this point.
         '''
@@ -169,4 +188,4 @@ class Command:
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
+    doctest.testfile('test/app.test')
