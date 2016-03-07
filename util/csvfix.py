@@ -1,40 +1,62 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 #
-# $Id: csvfix.py,v 1.16 2015/01/14 21:36:04 weiwang Exp $
-#
+# $Id: csvfix.py,v 1.28 2015/12/04 14:49:43 weiwang Exp $
+"""
+| This file is part of the c9r package
+| Copyrighted by Wei Wang <ww@9rivers.com>
+| License: https://github.com/ww9rivers/c9r/wiki/License
+
+A utility for CSV file fixing / manipulation.
+"""
+
+# http://stackoverflow.com/a/12639040/249173
+from gevent import monkey; monkey.patch_all()
 
 import atexit, glob, os, re
 import csv, time
 import gevent
-from gevent import monkey
+import json
 from gevent.pool import Pool
 from gevent.queue import Empty, JoinableQueue
 from zipfile import ZipFile, BadZipfile
 from c9r.app import Command
+from c9r.file.util import forge_path
 from c9r.pylog import logger
 import c9r.util.filter
-from c9r.util.filter import Filter
-from c9r.util.filter.csvio import Reader, Writer
+from c9r.util.filter import Filter, csvio
+import sys
+import traceback
 
-monkey.patch_all()
 jobqu = JoinableQueue()  # Queue of jobs (tasks)
 
 
 class CSVFixer(Command):
-    '''
+    '''Extra Options:
+    ==================
+      -E | --Enabled-only       Only list enabled tasks.
+      -L | --List               List the tasks configured.
+
     Configuration options:
 
-      path    Working folder for the csvfix tool.
-      tasks   A list of tasks in dict, keyed with filename template.
+      dialects      A list of CSV dialects, keyed with textual names.
+      path          Working folder for the csvfix tool.
+      tasks         A list of tasks in dict, keyed with filename template.
 
     Each task may be configured with:
 
       delete        Set to true to delete the zip file after processing.
-      file-mode     Either "w" or "a".
+      disabled      Set to true to disable this task.
+      delete-empty  Delete output file if empty. Defaults to True.
+      destination   Destination folder for fixed files. Defaults to /cwd/.
+      end-at        Optional regex for end of input file.
+      file-mode     Either "w" (overwrite) or "a" (append). Defaults to "w".
       filters       A list of filters for CSV data manipulations.
       header        CSV data column header for output.
-      header-clean  Regex for removing special characters. Defaults to '\W+'.
+      header-clean  Regex for removing special characters. Defaults to '\\W+'.
       header-fix    Optional dict used to fix the header.
+      input-format  Format of input data: "csv" or "json". Defaults to "csv".
+      pattern       Optional filename template - This overwrites the pattern in the
+                    task key.
       read-header   True, if CSV column header is to be read from first line in data.
                     Defaults to false.
       rename        Optional dict for renaming the output file(s).
@@ -67,7 +89,7 @@ class CSVFixer(Command):
     as a field name in Splunk. A generic conversion is to make the name start with a
     letter or underscore. For example:
 
-        "header-fix":   { "([^A-Z_a-z]+)(\w+)": "{1}{0}" }
+        "header-fix":   { "([^A-Z_a-z]+)(\\w+)": "{1}{0}" }
 
     That will break a string not starting with a letter or underscore into 2 parts,
     then re-build a string with the part starting with a letter or underscore first,
@@ -84,6 +106,22 @@ class CSVFixer(Command):
 
     More than one entries may be configured for "rename". The renaming process
     stops when the first match is found.
+
+    Dialects:
+    ====================
+    Dialects is a collection of Python CSV dialect configurations, each with a name
+    and a set of parameters that the csv.register_dialect() function recognized.
+
+    For example:
+
+        "nix":
+        {
+                "quoting":		"QUOTE_ALL",
+                "lineterminator":	"\\n"
+        }
+
+    Will register a CSV dialect that quotes all fields and use UNIX-style newline
+    with the name "nix".
 
     Filter:
     ====================
@@ -121,7 +159,57 @@ class CSVFixer(Command):
         gevent.joinall(tasks)
 
     def __init__(self):
+        Command.short_opt += "EL"
+        Command.long_opt += ["Enabled-only", "List"]
+        self.enabled_only = self.to_list = False
         Command.__init__(self)
+        csvio.register_dialects(self.config('dialects'))
+        if self.to_list:
+            print('Tasks configured:')
+            tasks = self.config('tasks', {})
+            for pat in sorted(tasks.keys()):
+                if not pat.strip(): continue
+                tsk = tasks[pat]
+                disabled = tsk.get('disabled', False)
+                if disabled and self.enabled_only: continue
+                print('\t{0}:\t{1}'.format(
+                        pat, {False:'enabled', True:'disabled'}[disabled]))
+            exit(0)
+
+
+    def _opt_handler(self, opt, val):
+        '''
+        Default option handler -- an option is considered unhandled if it reaches this point.
+        '''
+        if opt in ("-E", "--Enabled-only"):
+            self.enabled_only = True
+        elif opt in ("-L", "--List"):
+            self.to_list = True
+        else:
+            assert False, "unhandled option: "+opt
+
+
+class InvalidInputFormat(Exception):
+    '''Error for invalid input-format configuration.
+    '''
+
+
+class JSOReader(object):
+    '''Read from the given in_file and parse each line into a dict as in JSON object.
+    '''
+    def next(self):
+        jsobj = json.loads(self.in_file.next())
+        logger.debug(str(jsobj))
+        return jsobj
+
+    def __init__(self, in_file, fieldnames=None):
+        '''Initiate this reader with input /in_file/. The /fieldnames/ value
+        is ignored as field names are read form the JSON object.
+
+        TBD:
+        x    May use /fields/ as a translation map?
+        '''
+        self.in_file = in_file
 
 
 class Pipeline(object):
@@ -142,13 +230,14 @@ class Pipeline(object):
         /fnr/       (Name of) file to read from.
         /fnw/       (Name of) file to write to.
 
-        The /fnr/ file is read with a default csv.DictReader() as of now
+        The /fnr/ file is read with a default csv.DictReader() as of now, or
+        a JSOReader object if explicitly configured so.
         -- May need to revise to allow handling of CSV format variations.
 
         Returns number of rows (records) processed in the CSV file.
         '''
         # Open files if they are given as file names:
-        fin = Reader(open(fnr, 'rU') if isinstance(fnr, basestring) else fnr)
+        fin = csvio.Reader(open(fnr, 'rU') if isinstance(fnr, basestring) else fnr, self.ends)
         fout = open(fnw, self.file_mode) if isinstance(fnw, basestring) else fnw
         write_header = self.write_header and (fout.tell() == 0)
         # Skip non-data if so configured:
@@ -174,6 +263,7 @@ class Pipeline(object):
         # TBD: Make output header different than input header, optionally.
         rheader = None
         header = self.header
+        logger.debug('{0}: {1}to output CSV header: {2}'.format(fnw, '' if write_header else 'not ', header))
         if self.read_header or header is None:
             try:
                 rheader = [ self.header_clean.sub('', x) for x in fin.next().split(',') ]
@@ -198,7 +288,7 @@ class Pipeline(object):
         # Read through the input file and write out: Read error(s) are logged but ignored.
         #
         lineno = 0
-        with Writer(fout, header or rheader, write_header) as fw:
+        with csvio.Writer(fout, header or rheader, write_header, self.dialect) as fw:
             # filters: Filters to pass data through. If missing, then straight thru.
             filter1 = fw
             try:
@@ -210,7 +300,7 @@ class Pipeline(object):
             except ImportError:
                 logger.warn('ImportError for filter {0}'.format(fltr))
                 raise
-            csvreader = csv.DictReader(fin, fieldnames=(rheader or header))
+            csvreader = self.ireader(fin, fieldnames=(rheader or header))
             while True:
                 try:
                     line = csvreader.next()
@@ -220,6 +310,11 @@ class Pipeline(object):
                     break
                 except Exception as ex:
                     logger.warn('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
+                    logger.debug('\tline = {0})'.format(line))
+                    print '-'*60
+                    traceback.print_exc(file=sys.stdout)
+                    print '-'*60
+                    #logger.debug(traceback.format_tb(sys.exc_info()))
             if True:
                 logger.debug('Closing filter 1: {0}, lines = {1}, fout size = {2}'.format(type(filter1).__name__, lineno, fout.tell()))
                 filter1.close()
@@ -237,6 +332,8 @@ class Pipeline(object):
         filters         An optional sequential list of filters.
         '''
         self.dest = config.get('destination', cwd)
+        ends = config.get('end-at', False)
+        self.ends = re.compile(ends) if ends else ends
         skip = dict(more=False)
         # Skip till/pass a line matching a regex. The matching line is included.
         # 'skip-line' => Number of lines to skip from a CSV file
@@ -254,6 +351,16 @@ class Pipeline(object):
         self.read_header = config.get('read-header', False)
         self.write_header = config.get('write-header', False)
         self.file_mode = config.get("file-mode", 'w')
+        input_format = config.get('input-format', 'csv')
+        try:
+            self.ireader = {
+                'csv':  csv.DictReader,
+                'json': JSOReader
+                }[input_format]
+        except KeyError:
+            raise InvalidInputFormat(input_format)
+        self.dialect = config.get('dialect', None)
+
 
 def atexit_delete(filename):
     '''A utility function for threaded jobs started in CSVFixer to delete a given file.
@@ -277,10 +384,12 @@ def task(cwd):
             config, pattern = jobqu.get(timeout=10)
         except Empty:
             break
-        if pattern == '':
-            logger.debug('CSVFixer: Ignore empty pattern')
+        if pattern == '' or config.get('disabled', False):
+            logger.debug('CSVFixer: Ignore empty pattern or disabled task')
             continue
+        pattern = config.get('pattern', pattern) # 'pattern' may be configured inside task
         dest = config.get('destination', cwd)
+        forge_path(dest)
         process = Pipeline(config)
         keep_times = config.get('times', False)
         rename = [ (re.compile(xk),xv) for xk,xv in config.get('rename', {}).iteritems() ]
@@ -289,19 +398,24 @@ def task(cwd):
             stinfo = os.stat(zipfn)
             logger.debug('CSVFixer: Fixing file "{0}", mtime = {1}'.format(
                     zipfn, time.strftime('%c', time.localtime(stinfo.st_mtime))))
-            try:
-                zip = ZipFile(zipfn)
-            except BadZipfile:
-                logger.warn('CSVFixer: zip file "%s" is bad.' % (zipfn))
-                continue
-            ziplist = zip.namelist()
-            logger.debug('CSVFixer: Found list in zip file = %s' % (format(ziplist)))
+            if zipfn[-4:] != '.zip':
+                ## Assume that it is a text CSV file if file name does not end with .zip:
+                zipf = None
+                ziplist = [zipfn]
+            else:
+                try:
+                    zipf = ZipFile(zipfn)
+                    ziplist = zipf.namelist()
+                    logger.debug('CSVFixer: Found list in zip file = %s' % (format(ziplist)))
+                except BadZipfile:
+                    logger.warn('CSVFixer: zip file "%s" is bad.' % (zipfn))
+                    continue
             fwpath = ''
             for fn in ziplist:
                 if fwpath == '' or config.get('file-mode') != 'a':
                     fwname = fn
                     for rex, fmt in rename:
-                        mx = rex.match(fwname)
+                        mx = rex.search(fwname)
                         if mx:
                             try:
                                 fwname = fmt.format(*mx.groups())
@@ -310,7 +424,7 @@ def task(cwd):
                             break
                     fwpath = os.path.join(dest, fwname)
                 logger.debug('Processing file "{0}" to "{1}"'.format(fn, fwname))
-                lines = process(zip.open(fn, 'r'), fwpath)
+                lines = process(open(fn, 'r') if zipf is None else zipf.open(fn, 'r'), fwpath)
                 logger.debug('{0} lines processed in file "{1}"'.format(lines, fn))
                 # Set fixed file's timestamps if so configured:
                 if keep_times:
@@ -321,6 +435,10 @@ def task(cwd):
             if config.get('delete', False):
                 logger.debug('File "%s" registered to be deleted' % (zipfn))
                 atexit.register(atexit_delete, zipfn)
+            # Delete empty file if so configured:
+            if fwpath != '' and config.get('delete-empty', True) and os.stat(fwpath).st_size < 1:
+                os.unlink(fwpath)
+                logger.debug('Deleted empty output file "{0}"'.format(fwpath))
         jobqu.task_done()
         logger.debug('Task "{0}" completed'.format(pattern))
 

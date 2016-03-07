@@ -1,20 +1,10 @@
 #!/usr/bin/env python
-##
-## $Id: l3.py,v 1.4 2014/07/10 22:23:47 weiwang Exp $
-##
-##
-## This program is licensed under the GPL v3.0, which is found at the URL below:
-##	http://opensource.org/licenses/gpl-3.0.html
-##
-## Copyright (c) 2009 Regents of the University of Michigan.
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms are permitted
-## provided that this notice is preserved and that due credit is given
-## to the University of Michigan at Ann Arbor. The name of the University
-## may not be used to endorse or promote products derived from this
-## software without specific prior written permission. This software
-## is provided ``as is'' without express or implied warranty.
+'''
+$Id: l3.py,v 1.5 2015/12/04 14:57:29 weiwang Exp $
+
+This program is licensed under the GPL v3.0, which is found at the URL below:
+	http://opensource.org/licenses/gpl-3.0.html
+'''
 
 import os, socket, struct
 from c9r.pylog import logger
@@ -27,12 +17,6 @@ def default_gateway():
     References:
     https://gist.github.com/1059982
     http://stackoverflow.com/questions/4904047/how-can-i-get-the-default-gateway-ip-with-python
-
-    >>> if 'DEBUG' in os.environ:
-    ...     import logging, c9r.pylog
-    ...     c9r.pylog.set_level(logging.DEBUG)
-    >>> default_gateway() != ''
-    True
     """
     if os.name == 'nt':
         # Windows:
@@ -49,11 +33,6 @@ def default_gateway():
 
 def get_lan_ip():
     '''http://stackoverflow.com/questions/11735821/python-get-localhost-ip
-
-    >>> ip = get_lan_ip()
-    >>> logger.debug('IP = %s'%(ip))
-    >>> ip is None
-    False
     '''
     if os.name != "nt":
         import fcntl
@@ -78,9 +57,6 @@ def get_lan_ip():
 
 def interfaces():
     '''Return a list of network interfaces -- works in Linux only for now.
-
-    >>> len(interfaces()) > 0
-    True
     '''
     if os.access('/proc/net/dev', os.R_OK):
         return [ line.split(':')[0].strip().lower()
@@ -94,4 +70,4 @@ if __name__ == '__main__':
     To run the doctests: Will test with doctest.testfile().
     '''
     import doctest
-    doctest.testmod()
+    doctest.testfile('test/l3.txt')

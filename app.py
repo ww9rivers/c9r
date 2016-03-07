@@ -7,15 +7,6 @@ http://opensource.org/licenses/gpl-3.0.html
 
 Copyright (c) 2012,2013 9Rivers.net. All rights reserved.
 
-Copyright (c) 2012,2013 University of Michigan. All rights reserved.
-
-Redistribution and use in source and binary forms are permitted
-provided that this notice is preserved and that due credit is given
-to the University of Michigan at Ann Arbor. The name of the University
-may not be used to endorse or promote products derived from this
-software without specific prior written permission. This software
-is provided ``as is'' without express or implied warranty.
-
 #  A command line skeleton with basic command line parameter handleing.
 '''
 

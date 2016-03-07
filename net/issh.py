@@ -12,22 +12,15 @@ import time
 import base64, re, os
 from cStringIO import StringIO
 from c9r.app import Command
-from c9r.util.jso import Storage, load_storage
+from c9r.file.config import Config
 from c9r.pylog import logger
+    
 
-
-class Config(Storage):
-    '''A JSON file based configuration object.
+class AcceptKeyPolicy(pyssh.client.MissingHostKeyPolicy):
+    '''A policy to automatically accept missing host keys, with no warning.
     '''
-    def __init__(self, *args, **kwargs):
-        super(Config, self).__init__()
-        fn = kwargs.get('config_file')
-        if fn != None:
-            logger.debug('Loading config file "{0}"'.format(fn))
-            self.update(load_storage(fn))
-            del kwargs['config_file']
-        self.update(dict(*args, **kwargs))
-
+    def missing_host_key(self, client, hostname, key):
+        logger.debug('Accepted missing host key for {0}'.format(hostname))
 
 class EOF(Exception):
     '''End-of-file condition.
@@ -102,7 +95,7 @@ class SecureShell(object):
         /item/     Optional config item name.
         /default/  Optional default value.
         '''
-        return self.cfg if item is None else self.cfg.get(item, default)
+        return self.cfg.config(item, default)
 
     def connect(self, host, **kwargs):
         profile, params = self.get_credentials(host, **kwargs)
@@ -305,16 +298,20 @@ class SecureShell(object):
     def __init__(self, host=None, **kwargs):
         '''Initialization.
 
-        **kwargs is optional parameters for connect().
+        /host/          Optional hostname. Automatically connects if given.
+        /kwargs/        Optional, parameters for connect().
         '''
         super(SecureShell, self).__init__()
         if not hasattr(SecureShell, 'CFG'):
             SecureShell.CFG = Config(
-                known_hosts = '~/.ssh/known_hosts',
-                prompt_wait = 0.05,
-                config_file = os.path.expanduser('~/.ssh/cli-conf.json')
-            )
-        self.cfg = Config(SecureShell.CFG, **kwargs)
+                conf = '~/.ssh/cli-conf.json',
+                initconf = {
+                    'known_hosts': '~/.ssh/known_hosts',
+                    'missing_key': 'add',
+                    'prompt_wait': 0.05,
+                    }
+                )
+        self.cfg = Config(initconf=SecureShell.CFG, update=kwargs)
         self.timeout = self.config('timeout', 10)
         self.default = self.config('default', 'default.default')
         logger.debug('Default profile.category = {0}.'.format(self.default))
@@ -322,7 +319,12 @@ class SecureShell(object):
         sshc = pyssh.SSHClient()
         sshc.load_system_host_keys()
         sshc.load_host_keys(os.path.expanduser(self.config('known_hosts')))
-        sshc.set_missing_host_key_policy(pyssh.AutoAddPolicy())
+        sshc.set_missing_host_key_policy(
+            {
+                'accept': AcceptKeyPolicy,
+                'add': pyssh.client.AutoAddPolicy,
+                'warn': pyssh.client.WarningPolicy,
+                }.get(self.config('missing_key'), pyssh.client.RejectPolicy)())
         self.sshc = sshc
         self.channel = None
         self.flush()

@@ -1,15 +1,16 @@
 #! /usr/bin/env python
 #
-# $Id: csvio.py,v 1.5 2015/01/07 19:44:25 weiwang Exp $
+# $Id: csvio.py,v 1.13 2015/12/11 15:16:47 weiwang Exp $
 #
 
 import csv
+import re
 from c9r.pylog import logger
 from c9r.util.filter import Filter
 
 
 class Reader(object):
-    '''A buffered reader to allow rewinding a line.
+    '''A buffered reader to allow rewinding a line, with optional /ends/.
     '''
     def next(self):
         '''Return the last line if the input is backed up.
@@ -19,9 +20,11 @@ class Reader(object):
             self.line = self.input.next()
         else:
             self.read = True
-        if None:
-            logger.debug('{0}: Read line {1}'.format(type(self).__name__, self.line))
-        return self.line
+        line = self.line
+        if self.ends and self.ends.match(line):
+            logger.debug('Ends proessing at: {0})'.format(line))
+            raise StopIteration
+        return line
 
     def backup(self):
         '''Back up: Next call to next() will reread the last line.
@@ -49,13 +52,14 @@ class Reader(object):
             return fact()
         return self.input
 
-    def __init__(self, input_file):
+    def __init__(self, input_file, ends):
         '''Initial this reader with an input, which is requried to have a
         next() function.
         '''
         self.input = input_file
         self.line = None
         self.read = True
+        self.ends = re.compile(ends) if ends else ends
 
     __enter__ = open
     '''To allow this object to be used with "with".'''
@@ -75,6 +79,13 @@ class Writer(Filter):
 
     A Writer is able to write out a CSV header if provided. But it does ntt to be
     explicitly provided.
+
+    parameters:
+
+    /next_filter/       The target for this writer to write to;
+    /header/            Header (a list);
+    /write_header/      True to write header (Defaults to true);
+    /dialect/           CSV dialect, defaults to 'excel'.
     '''
 
     class Shim(object):
@@ -83,24 +94,35 @@ class Writer(Filter):
         Writer.
         '''
         def write(self, data):
-            if None:
-                logger.debug('{0}: Writing to {1}'.format(type(self).__name__, type(self.writer).__name__))
-            self.writer.que.put(data)
+            if data[0:8] == 'LastSeen':
+                logger.debug('{0}: Queuing {1} to {2}'.format(type(self).__name__, data, type(self.csvw).__name__))
+            Filter.write(self.csvw, data)
 
         def __init__(self, writer):
-            self.writer = writer
+            self.csvw = writer
 
     def write(self, data):
         '''Run given /data/ through the csv.DictWriter to convert from
         a dict to a CSV row with its writerow() function.
         '''
         try:
-            self.writer.writerow(data)
-        except ValueError:
-            logger.debug('Get ValueError data={0}'.format(data))
+            if self.header != None:
+                # TBD: To use csv.DictWriter.writeheader()
+                # SuSE has Python 2.6.x, where the function does not exist.
+                # self.csvo.writeheader()
+                self.next_filter.write(','.join(self.header)+'\r\n')
+                self.header = None
+                logger.debug('Wrote header to {0}'.format(self.next_filter))
+            self.csvo.writerow(data)
+            self.flush()
+        except Exception as ex:
+            logger.debug('Got Exception {1}, data={0}'.format(data, ex))
             raise
 
-    def __init__(self, next_filter, header, write_header=True):
+    writerow = write
+    '''To give csvio.Writer a writerow() so it's may be used in place of csv.DictWriter.'''
+
+    def __init__(self, next_filter, header, write_header=True, dialect=None):
         '''The CSV writer that writes data to CSV format with given
         header.
 
@@ -108,10 +130,23 @@ class Writer(Filter):
         Extra fields in each row is ignored.
         '''
         Filter.__init__(self, next_filter)
-        if write_header and header:
-            next_filter.write(','.join(header)+'\n')
-            logger.debug('Wrote CSV header: {0}'.format(header))
-        self.writer = csv.DictWriter(self.Shim(self), header, extrasaction='ignore')
+        self.csvo = csv.DictWriter(self.Shim(self), header, extrasaction='ignore',
+                                   dialect=(dialect or 'excel'))
+        self.header = header if write_header else None # Header to write
+        logger.debug('write_header={0}, header={1}'.format(write_header, header))
+
+
+def register_dialects(dialects):
+    '''Register a list of CSV dialects (dict of dicts).
+    '''
+    if dialects is None:
+        return
+    for name, params in dialects.iteritems():
+        quoting = params.get('quoting')
+        if quoting and not isinstance(quoting, int):
+            params['quoting'] = getattr(csv, quoting)
+        csv.register_dialect(name, **params)
+        logger.debug('CSV dialect "{0}" registered'.format(name))
 
 
 if __name__ == '__main__':

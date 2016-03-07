@@ -1,12 +1,17 @@
 #! /usr/bin/env python
 #
-# $Id: cisco.py,v 1.4 2015/01/08 20:45:56 weiwang Exp $
+# $Id: CiscoPI.py,v 1.9 2015/12/04 14:27:14 weiwang Exp $
 #
 
 import re
+from time import strftime, strptime
+from c9r.net.mac import MACFormat
 from c9r.util.filter import Filter
 from c9r.pylog import logger
 from cisco.cli.port import nickname
+
+pi_timeformat = '%a %b %d %H:%M:%S %Z %Y'
+sql_timeformat = "%b %d %Y %I:%M:%S%p"
 
 
 class Normalizer(Filter):
@@ -20,13 +25,11 @@ class Normalizer(Filter):
     remac = re.compile('[\.\-:]')  # 1a:2b:3c:4d:5e:6f
     retime = re.compile('\W+')     # 1 days 2 hrs 35 min 55 sec
     vendor_map = {
-        'hewlett-packard': 'HP',        
+        'apple,inc': 'Apple',
+        'hewlett-packard': 'HP',
+        'hewlett': 'HP',
+        'unknown': ''
         }
-
-    def next(self):
-        '''Interface function to produce the next piece of data for this filter.
-        '''
-        return self.normalize(Filter.next(self))
 
     def normalize(self, data):
         '''Here the data fields will be normalized before returned:
@@ -38,10 +41,10 @@ class Normalizer(Filter):
                 (wrongly-)escaped special characters embedded.
         '''
         for xk in [ 'APMACAddress', 'MACAddress' ]:
-            xv = data.get(xk, '')
-            if len(xv) > 12:
-                data[xk] = ''.join(self.remac.split(xv)).lower()
-        for xk in [ 'EndpointType', 'Vendor' ]:
+            xv = data.get(xk)
+            if xv:
+                data[xk] = MACFormat.none(xv)
+        for xk in [ 'EndpointType' ]:
             xv = data.get(xk, '')
             if xv == 'Unknown':
                 data[xk] = ''
@@ -53,7 +56,10 @@ class Normalizer(Filter):
         for xk in [ 'CCX', 'E2E' ]:
             if data.get(xk, '') == 'Not Supported':
                 data[xk] = ''
-        it = iter(self.retime.split(data['LastSessionLength']))
+        try:
+            it = iter(self.retime.split(data['LastSessionLength']))
+        except TypeError:
+            it = []
         sec = 0
         for x in it:
             xsec = 0
@@ -67,12 +73,13 @@ class Normalizer(Filter):
             except StopIteration:
                 pass
             sec += xsec
-        data['LastSessionLength'] = sec
+        if sec > 0:
+            data['LastSessionLength'] = sec
         #
         # Normalize vendor names
         #
         vendor = self.vendor_map.get(data.get('Vendor', '').lower())
-        if vendor:
+        if vendor != None:
             data['Vendor'] = vendor
         # Process 'User' ID:
         #-- Hacky but no better way: Must deal with '\n', '\t' individually so not to
@@ -91,25 +98,29 @@ class Normalizer(Filter):
                 data['Port'] = port
         return data
 
+    def write(self, data):
+        '''Normalize given data before writing to the pipe.
+        '''
+        data = self.normalize(data)
+        return 0 if data is None else Filter.write(self, data)
+
 
 class Wired(Normalizer):
     '''Cisco Prime Infrastructure (ciscopi) wired report selective filter.
 
     Exception: StopIteration is raised when data is exhausted.
     '''
-    def is_wired(self, data):
-        '''Test if given data set is a wired connection.
+    def is_filtered(self, data):
+        '''Test if given data set is not a wired connection.
         '''
-        return data.get('ConnectionType') == 'Wired'
+        return data.get('ConnectionType') != 'Wired'
 
-    def next(self):
-        '''Return the next wired connection record.
+    def write(self, data):
+        '''Actually write the data if it is wired.
         '''
-        while True:
-            data = Filter.next(self)
-            if self.is_wired(data):
-                logger.debug('Data is wired: {0}'.format(data))
-                return self.normalize(data)
+        if self.is_filtered(data):
+            return 0
+        return Normalizer.write(self, data)
 
 
 class Wireless(Wired):
@@ -117,21 +128,60 @@ class Wireless(Wired):
 
     Exception: StopIteration is raised when data is exhausted.
     '''
-    def next(self):
-        '''Return the next wireless connection record.
+    def is_filtered(self, data):
+        '''Return True if this is not wireless connection record.
         '''
-        while True:
-            data = Filter.next(self)
-            if not self.is_wired(data):
-                return self.normalize(data)
+        return not Wired.is_filtered(self, data)
+
+
+class TimeNormalizer(Normalizer):
+    '''Convert time string from "Tue Mar 10 08:12:01 EST 2015"
+    to "Mar 10 2015 8:12:01AM".
+    '''
+    def normalize(self, data):
+        '''Normalize Cisco PI data, and convert "LastSeen" field to SQL time format.
+        '''
+        try:
+            data['LastSeen'] = strftime(sql_timeformat, strptime(data['LastSeen'], pi_timeformat))
+        except:
+            pass
+        return Normalizer.normalize(self, data)
+
+
+class WiredSQL(TimeNormalizer, Wired):
+    '''Filter for wired data and also convert timestamp to SQL format.
+    '''
+
+
+class WirelessSQL(TimeNormalizer, Wireless):
+    '''Filter for wired data and also convert timestamp to SQL format.
+    '''
+
+class WirelessGuest(WirelessSQL):
+    '''Filter for devices on one of the guest wireless networks.
+    '''
+    guest_SSIDs = [ 'MGuest-UMHS', 'MWireless-UMHS' ]
+    def is_filtered(self, data):
+        '''Filter the data if it is not wireless, or it is not on one of the guest SSID.
+        '''
+        return Wireless.is_filtered(self, data)\
+            or not data.get('SSID') in self.guest_SSIDs
+
+
+class WirelessUMHS(WirelessGuest):
+    '''Filter for wireless devices on none of the guest wireless networks.
+    '''
+    def is_filtered(self, data):
+        return Wireless.is_filtered(self, data)\
+            or data.get('SSID') in self.guest_SSIDs
 
 
 def test():
     '''Unit test for this filter module.
     '''
     import doctest
-    import c9r.app
-    class TestApp(c9r.app.Command):
+    from c9r import app
+    class TestApp(app.Command):
         def __call__(self):
             doctest.testfile('test/cisco.test')
     TestApp()()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##
-## $Id: jsonpy.py,v 1.5 2014/07/10 22:23:47 weiwang Exp $
+## $Id: jsonpy.py,v 1.6 2015/10/28 21:37:04 weiwang Exp $
 ##
 """
 | This file is part of the c9r package
@@ -34,6 +34,9 @@ class Null(object):
 
     def iteritems(self):
         return self.__dict__.iteritems()
+
+    def keys(self):
+        return self.__dict__.keys()
 
     def update(self, data):
         '''Update this object with attribute/value pairs given in a dict.'''

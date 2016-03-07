@@ -1,20 +1,11 @@
 #!/usr/bin/env python
 #
-# $Id: pylog.py,v 1.5 2015/01/07 19:55:43 weiwang Exp $
+# $Id: pylog.py,v 1.7 2015/08/13 21:39:54 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
 
 Copyright (c) 2012,2013 9Rivers.net. All rights reserved.
-
-Copyright (c) 2012,2013 University of Michigan. All rights reserved.
-
-Redistribution and use in source and binary forms are permitted
-provided that this notice is preserved and that due credit is given
-to the University of Michigan at Ann Arbor. The name of the University
-may not be used to endorse or promote products derived from this
-software without specific prior written permission. This software
-is provided ``as is'' without express or implied warranty.
 
 #  A logging module based on Python's logging.
 Reference:
@@ -25,14 +16,15 @@ import os, sys
 import logging
 import logging.config
 import logging.handlers as Handlers
+from ConfigParser import NoSectionError
 import __main__ as main
 
 script_file = getattr(main, '__file__', None)
 def_config = {
-    'config': '/etc/python/logging.conf',
+    'config': '~/.etc/pylog.conf',
     'name': os.path.basename(script_file) if script_file else format(main)
     }
-CONFIG = globals().get('CONFIG', None)
+PYLOG = globals().get('PYLOG', None)
 def_format = "%(asctime)s %(levelname)s %(module)s.%(funcName)s:%(lineno)d %(message)s"
 def_level = 'WARN'
 logger = globals().get('logger', None)
@@ -42,12 +34,13 @@ def config(conf=None, defaults=None, disable_existing_loggers=True):
 
     The ultimate default result is a logger with the app's main file basename.
 
-    @param conf         A c9r.Thingy (dict-like) object with config info.
-                        If this config is good, it is remembered.
+    /conf/      A c9r.Thingy (dict-like) object with config info - only the
+                "logging" item is used, however.
+                If this config is good, it is remembered.
     See logging.config.fileConfig() for details on other parameters.
     '''
     global logger
-    global CONFIG
+    global PYLOG
     conf = conf.get('logging', def_config) if conf else def_config
     if conf is None:
         conf = def_config
@@ -55,8 +48,8 @@ def config(conf=None, defaults=None, disable_existing_loggers=True):
     name = conf.get('name', def_config['name'])
     try:
         logging.config.fileConfig(fname, defaults, disable_existing_loggers)
-        CONFIG = dict(file=fname, name=name)
-    except:
+        PYLOG = dict(config=fname, name=name)
+    except NoSectionError:
         pass
     logger = get_logger(name)
     logger.propagate = False
@@ -70,7 +63,7 @@ def get_logger(name=None):
 
     @param /name/ is name of a logging facility, which is either configured
     in the 'logging.file' given in a call to config(), or configured in
-    CONFIG with the name given here.
+    PYLOG with the name given here.
 
     if no name is given, and a logger has already been retrieved previously,
     that will be returned to the caller.
@@ -82,16 +75,18 @@ def get_logger(name=None):
         name = def_config['name']
     status = 'exists' # Assuming logger exists.
     logger = logging.getLogger(name)
+    # The logger should have been configured by the 'config' file;
+    # But if not ...
     if len(logger.handlers) == 0:
         # Setup handler for logger:
-        cfg = CONFIG.get(name) if (CONFIG and name) else None
+        cfg = PYLOG.get(name) if (PYLOG and name) else None
         if cfg is None: # Either 'facility' is not configured, or not given.
             handler = logging.StreamHandler(sys.stdout)
             formatter = def_format
             level = def_level
         else:
             formatter = cfg.get('format', def_format)
-            path = cfg.get('path', '/var/log/c9r.app.log')
+            path = cfg.get('path', '/var/log/python/pylog.log')
             copies = cfg.get('copies', 2)
             level = cfg.get('level')
             mode = cfg.get('mode')
@@ -131,3 +126,8 @@ def set_level(level=logging.INFO):
 
 
 config()
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testfile('test/pylog.text')
