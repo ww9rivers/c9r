@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #
-# $Id: csvfix.py,v 1.28 2015/12/04 14:49:43 weiwang Exp $
+# $Id: csvfix.py,v 1.30 2016/06/06 15:36:22 weiwang Exp $
 """
 | This file is part of the c9r package
 | Copyrighted by Wei Wang <ww@9rivers.com>
@@ -24,6 +24,7 @@ from c9r.file.util import forge_path
 from c9r.pylog import logger
 import c9r.util.filter
 from c9r.util.filter import Filter, csvio
+import subprocess
 import sys
 import traceback
 
@@ -44,10 +45,17 @@ class CSVFixer(Command):
 
     Each task may be configured with:
 
-      delete        Set to true to delete the zip file after processing.
-      disabled      Set to true to disable this task.
+      postprocess   What to do about the original data file. The value may be:
+        bzip2           Compress the file using bzip2;
+        delete          The same as "delete true";
+        gzip            Compress using gzip;
+        xz              Compress using xz;
+        zip             Compress using zip.
+      delete        Set to true to delete data files after processing.
       delete-empty  Delete output file if empty. Defaults to True.
       destination   Destination folder for fixed files. Defaults to /cwd/.
+      dialect       Spcify a CSV dialect, built-in or registered.
+      disabled      Set to true to disable this task.
       end-at        Optional regex for end of input file.
       file-mode     Either "w" (overwrite) or "a" (append). Defaults to "w".
       filters       A list of filters for CSV data manipulations.
@@ -372,6 +380,27 @@ def atexit_delete(filename):
     except Exception as ex:
         logger.warn('CSVFixer: Exception "{0}" deleting file "{1}".'.format(ex, filename))
 
+def atexit_process(filename, act):
+    '''Post process a file with given /act/.
+    '''
+    if act == 'delete':
+        return atexit_delete(filename)
+    if act in set([
+        'bzip2',        # Compress the file using bzip2;
+        'gzip',         # Compress using gzip;
+        'xz',           # Compress using xz;
+        'zip'           # Compress using zip.
+        ]):
+        cmd = (act if isinstance(act, list) else [act])+[filename]
+        try:
+            stdout = subprocess.check_output(cmd)
+            if stdout:
+                logger.info(stdout)
+        except CalledProcessError as err:
+            logger.error('Error from command {0}\n{1}'.format(cmd, err.output))
+        return
+    logger.debug('Unknown postprocess action: "{0}" "{1}"'.format(act, filename))
+
 def task(cwd):
     '''Task as a gevent Greenlet that processes one file name pattern.
 
@@ -422,7 +451,7 @@ def task(cwd):
                             except Exception as ex:
                                 logger.warn('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
                             break
-                    fwpath = os.path.join(dest, fwname)
+                    fwpath = os.path.join(dest, os.path.basename(fwname))
                 logger.debug('Processing file "{0}" to "{1}"'.format(fn, fwname))
                 lines = process(open(fn, 'r') if zipf is None else zipf.open(fn, 'r'), fwpath)
                 logger.debug('{0} lines processed in file "{1}"'.format(lines, fn))
@@ -435,6 +464,11 @@ def task(cwd):
             if config.get('delete', False):
                 logger.debug('File "%s" registered to be deleted' % (zipfn))
                 atexit.register(atexit_delete, zipfn)
+            else:
+                act = config.get('postprocess')
+                if act != None:
+                    logger.debug('File "%s" registered to be postprocessed with "%s"' % (zipfn, act))
+                    atexit.register(atexit_process, zipfn, act)
             # Delete empty file if so configured:
             if fwpath != '' and config.get('delete-empty', True) and os.stat(fwpath).st_size < 1:
                 os.unlink(fwpath)
