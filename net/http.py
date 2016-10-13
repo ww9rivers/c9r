@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-$Id: http.py,v 1.1 2015/04/17 21:21:09 weiwang Exp $
+$Id: http.py,v 1.2 2016/03/28 15:07:15 weiwang Exp $
 
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html

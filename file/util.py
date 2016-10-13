@@ -51,7 +51,7 @@ def created_before(path, timespec):
 def modified_before(path, timespec):
     '''Check if a file is modified before specified time.
 
-    /path/       Name (path) of a file.
+    /path/      Name (path) of a file.
     /timespec/  Time stamp to compare. See compare() above.
     '''
     fst = os.stat(path)

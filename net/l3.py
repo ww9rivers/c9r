@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-$Id: l3.py,v 1.5 2015/12/04 14:57:29 weiwang Exp $
+$Id: l3.py,v 1.6 2016/03/28 15:07:15 weiwang Exp $
 
 This program is licensed under the GPL v3.0, which is found at the URL below:
 	http://opensource.org/licenses/gpl-3.0.html
