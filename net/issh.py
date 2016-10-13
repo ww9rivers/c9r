@@ -102,6 +102,7 @@ class SecureShell(object):
         self.sshc.connect(host, **params)
         logger.debug('Connected to {0} as user "{1}".'.format(host, params.get('username', '<N/A>')))
         self.channel = self.sshc.invoke_shell()
+        # self.stderr = self.channel.makefile_stderr('rb')
         self.detect_prompt()
         if profile:
             init = profile.get('init')
@@ -126,18 +127,18 @@ class SecureShell(object):
         pattern.
 
         The idea is copied from 'pxssh' in pexpect.'''
-        if prompt0:
-            self.flush2(prompt0)
+        self.flush2(prompt0 if prompt0 else [EOF])
         self.sendline()
-        prompt_wait = self.config('prompt_wait', 0.05)
+        prompt_wait = self.prompt_wait
         if prompt_wait:
             time.sleep(prompt_wait)
-        self.flush2([self.newline])
+        self.flush2([EOF])
         self.sendline()
         if prompt_wait:
             time.sleep(prompt_wait)
-        self.flush2()
-        self.prompt = Prompt(self.newline.split(self.before)[-1])
+        ps1 = self.flush2([EOF])
+        logger.debug('Expecting prompt, flush2(newline) received: [{0}]'.format(ps1))
+        self.prompt = Prompt(self.newline.split(ps1)[-1])
         self.flush()
 
     def do_error(self, msg):
@@ -168,13 +169,13 @@ class SecureShell(object):
         pattern_list = PatternList(patterns)
         try:
             while True:
-                buffer = self.channel.recv(9999)
-                logger.debug("Recv'ed: {0}".format(buffer))
-                if len(buffer) == 0:
+                rbuf = self.channel.recv(9999)
+                logger.debug("Recv'ed: {0}".format(rbuf))
+                if len(rbuf) == 0:
                     if pattern_list.index_eof >= 0:
                         return pattern_list.index_eof
                     raise EOF()
-                sio = StringIO(buffer)
+                sio = StringIO(rbuf)
                 # Search for any match of the patterns
                 mx = None
                 while mx is None:
@@ -202,9 +203,9 @@ class SecureShell(object):
         '''
         self.before = self.after = ''
 
-    def flush2(self, pattern=[EOF], timeout=2):
+    def flush2(self, pattern=None, timeout=2):
         '''Flush the input to a specified (list of) pattern(s).'''
-        pat = pattern+[TIMEOUT]
+        pat = (pattern or [self.newline])+[TIMEOUT]
         ix = self.expect(pat, timeout)
         logger.debug("Flushing to pattern %s = %d" % (format(pat), ix))
         return self.before
@@ -258,7 +259,6 @@ class SecureShell(object):
         for cmd in (cmds if isinstance(cmds, list) else [cmds]):
             self.sendline(cmd)
             code = self.wait_for_prompt(expecting)
-            logger.debug('Command "{0}" returned {1}.'.format(cmd, code))
             results += (tuple(self.newline.split(self.before, 1)),)
         return results
 
@@ -289,7 +289,7 @@ class SecureShell(object):
     def wait_for_prompt(self, expecting=[]):
         '''Wait for the device CLI prompt with a configured delay.
         '''
-        prompt_wait = self.config('prompt_wait', 0.05)
+        prompt_wait = self.prompt_wait
         if prompt_wait:
             time.sleep(prompt_wait)
         if expecting is not None:
@@ -308,11 +308,12 @@ class SecureShell(object):
                 initconf = {
                     'known_hosts': '~/.ssh/known_hosts',
                     'missing_key': 'add',
-                    'prompt_wait': 0.05,
+                    'subnets': {}
                     }
                 )
         self.cfg = Config(initconf=SecureShell.CFG, update=kwargs)
         self.timeout = self.config('timeout', 10)
+        self.prompt_wait = self.config('prompt_wait') or 0.01
         self.default = self.config('default', 'default.default')
         logger.debug('Default profile.category = {0}.'.format(self.default))
         self.newline = re.compile(self.config('newline', "[\r\n]+"))
@@ -361,7 +362,7 @@ def main():
     host = cmd.args[0]
     logger.debug('Connecting to {0}'.format(host))
     ssh = SecureShell()
-    results = ssh.run(host, cmd.args[1:])
+    results = ssh.run(cmd.args[1:], host=host)
     logger.debug('Got {0} result(s)'.format(len(results)))
     for cmd,output in results.iteritems():
         print cmd
