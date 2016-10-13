@@ -21,13 +21,18 @@ class Normalizer(Filter):
     Last Seen,MAC Address,Vendor,IP Address,Device IP Address,Port,VLAN ID,802.11 State,
     Protocol,Endpoint Type,User,Connection Type,Last Session Length,Connected Interface,
     Access Technology Type
+
+    ====
+    The class data below may need to be made configurable in the future:
     '''
-    remac = re.compile('[\.\-:]')  # 1a:2b:3c:4d:5e:6f
-    retime = re.compile('\W+')     # 1 days 2 hrs 35 min 55 sec
+    retime = re.compile('\W+')       # 1 days 2 hrs 35 min 55 sec
+    reclean = re.compile('[^\w\s]*') # Regex to clean up CSV field
+    cleansub = ''
     vendor_map = {
         'apple,inc': 'Apple',
         'hewlett-packard': 'HP',
         'hewlett': 'HP',
+        #'verifone,inc.': 'Verifone',
         'unknown': ''
         }
 
@@ -78,8 +83,11 @@ class Normalizer(Filter):
         #
         # Normalize vendor names
         #
-        vendor = self.vendor_map.get(data.get('Vendor', '').lower())
-        if vendor != None:
+        vendor_name = data.get('Vendor', '')
+        vendor = self.vendor_map.get(vendor_name.lower())
+        if vendor is None:
+            vendor = self.reclean.sub(self.cleansub, vendor_name)
+        if vendor != vendor_name:
             data['Vendor'] = vendor
         # Process 'User' ID:
         #-- Hacky but no better way: Must deal with '\n', '\t' individually so not to
