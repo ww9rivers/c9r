@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# $Id: app.py,v 1.10 2015/01/15 14:56:00 weiwang Exp $
+# $Id: app.py,v 1.13 2016/06/06 18:15:15 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
@@ -27,13 +27,20 @@ class Command(object):
     Options:  -h | --help                  Print this help message
               -c | --config=<config-file>  Specify a configuration file.
                                            Default is {1}
+                            --             Clear configuration file list;
+                            -<int>         Keep <int> number of config file(s)
+                                           in the list: e.g. 2 to keep the first
+                                           two; -2 to remove the last two.
+                            -<filename>    Remove <filename> from the list.
               -d | --debug                 Debug mode.
               -p | --path=<add-path>       Addition to the PYTHONPATH for modules.
               -t | --test-config           Test the configuration only.
               -v | --verbose               Settting verbose output mode.
 {2}
     A configuration file is a text file in the JSON format, used to configure this
-    application.
+    application. Multiple configuration file may be specified; If a configuration
+    file name starts with '-', it means to remove that file from the list; If it
+    is '--', it means to clear the list.
     """
     defaults = {}
     def_conf = []
@@ -136,7 +143,17 @@ class Command(object):
                 self.usage()
                 sys.exit()
             elif o in ("-c", "--config"):
-                conffile.append(a)
+                if a[0] == '-':
+                    b = a[1:]
+                    if b == '-': # Clear conffile list
+                        conffile = []
+                    else: # Remove one specific conffile entry
+                        try:
+                            conffile = conffile[:int(b)]
+                        except ValueError:
+                            conffile = [ x for x in conffile if x != b]
+                else:
+                    conffile.append(a)
             elif o in ("-d", "--debug"):
                 self.debug = True
                 c9r.pylog.set_level(logging.DEBUG)
