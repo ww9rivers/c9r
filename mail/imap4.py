@@ -61,6 +61,12 @@ class Mailbox(imaplib.IMAP4_SSL):
         xres, xuid = self.uid('search', None, xsearch)
         return xres, xuid
 
+    def unread(self, auid):
+        '''
+        Mark a message specified by (auid) as unread.
+        '''
+        return self.uid('STORE', auid, '-FLAGS', '(\SEEN)')
+
     def __init__(self, dcon):
         imaplib.IMAP4_SSL.__init__(self, dcon.imap.server, dcon.imap.port)
         try:
