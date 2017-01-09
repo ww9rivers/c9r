@@ -10,6 +10,7 @@ http://opensource.org/licenses/gpl-3.0.html
 File Uploader
 '''
 
+import os
 import requests
 
 class HTTP4xx(BaseException):
@@ -130,6 +131,34 @@ errors = {
     }
 
 
+def get(url, path='.', options={}):
+    '''Download a file by the /url/ to the specified /path/.
+
+    The /path/ may be an object with a write() interface, in which case
+    retrieved data will be written into it.
+
+    Reference: http://stackoverflow.com/questions/16694907/
+    '''
+    if isinstance(path, basestring):
+        filename = os.path.join(path, url.split('/')[-1]) if os.path.isdir(path) else path
+        f = open(filename, 'wb')
+    elif hasattr(path, 'write') and callable(getattr(path, 'write')):
+        filename = '-'
+        f = path
+    # stream=True for larger files.
+    options.update(dict(stream=True))
+    r = requests.get(url, **options)
+    try:
+        for chunk in r.iter_content(chunk_size=1024): 
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+                #f.flush() commented by recommendation from J.F.Sebastian
+    except:
+        pass
+    if f and f != path: f.close()
+    return filename
+
+
 def put(files, url, data={}):
     '''Upload a give (list of) file(s) to a destination specified by /url/.
 
@@ -145,6 +174,7 @@ def put(files, url, data={}):
         parts = { var: (fdata, open(fdata, 'rb') if isinstance(fdata, basestring) else fdata) }
         status[fdata] = requests.post(url, files=parts, data=data)
     return status
+
 
 if __name__ == '__main__':
     import doctest
