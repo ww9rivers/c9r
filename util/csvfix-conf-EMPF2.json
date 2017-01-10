@@ -59,6 +59,7 @@
 		{
 			"disabled":	false,
 			"delete":	true,
+			"pattern":	"/app/var/cpca/*_????????_??????_??.csv",
 			"filters":	[ "Trim" ],
 			"destination":	"/app/var/cpca",
 			"skip-line":	1,
