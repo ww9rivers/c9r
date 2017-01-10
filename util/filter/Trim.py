@@ -11,4 +11,11 @@ class Trim(Filter):
 
         /data/ is expected to be a dictionary-type object, with.
         '''
-        return Filter.write(self, data.strip())
+        for xk,xv in data.iteritems():
+            data[xk] = xv.strip()
+        return Filter.write(self, data)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testfile('test/Trim.test')
