@@ -128,3 +128,14 @@ class Filter(object):
         if callable(getattr(next_filter, 'open', None)):
             next_filter = next_filter.open()
         self.next_filter = next_filter
+
+
+class Trim(Filter):
+    ''' Filter to trim extra spaces in (before and after) a string.
+    '''
+    def write(self, data):
+        '''Normalize given data before writing to the pipe.
+
+        /data/ is expected to be a dictionary-type object, with.
+        '''
+        return Filter.write(self, data.strip())
