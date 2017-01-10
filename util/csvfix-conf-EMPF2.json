@@ -65,6 +65,7 @@
 			"skip-line":	1,
 			"times":	true,
 			"read-header":	true,
+			"write-header":	true,
 			"rename":	{ "([\\w_]+_\\d{8}).+": "{0}.csv" },
 			"":		"#"
 		},
