@@ -39,7 +39,7 @@ class Config(object):
         /item/     Optional config item name.
         /default/  Optional default value.
         '''
-        return getattr(self, 'CONF', None) if item is None else self.CONF.get(item, default)
+        return self[item] or default
 
     def include(self, path, ext='.json'):
         '''To include a file or files in a folder that ends with given extension.
@@ -81,7 +81,8 @@ class Config(object):
         conf_update(self.CONF, conf)
 
     def __getitem__(self, item):
-        return self.config(item)
+        conf = getattr(self, 'CONF', None)
+        return conf if item is None or conf is None else conf[item]
 
     __getattr__ = __getitem__
 
