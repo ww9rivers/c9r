@@ -3,14 +3,12 @@
 \#*
 .*~
 *.egg-info
-example/*/*.log
-example/*.db
-example/*/*.db
 tests/*.db
 tests/*.log
 build/
+CVS/
 dist/
-example/sp/identities
+zips/
 subject.db
 .idea
 .project

@@ -1,0 +1,14 @@
+-*- mode:python; -*-
+Unit test for cache.py
+$Id$
+
+Test 1:
+
+  >>> from c9r.db.cache import DBCache
+  >>> import os
+  >>> os.chdir('test')
+  >>> cc = DBCache()
+  >>> x1val = 'This is a value for x1'
+  >>> cc.put('x1', x1val)
+  >>> cc.get('x1') == x1val
+  True
