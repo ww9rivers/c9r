@@ -1,0 +1,16 @@
+# -*- mode:python; -*-
+Unit test for rsync.py
+
+     >>> from c9r.pylog import logger
+     >>> from c9r.util.rsync import RsyncApp
+     >>> class TestApp(RsyncApp):
+     ...   def_conf = [ 'test/rsync-conf.json' ]
+     >>> app = TestApp()
+     >>> logger.debug('appconf {0}'.format(app.config()))
+     >>> result = app()['test1']
+     >>> result['status']
+     0
+     >>> result['err'] == ''
+     True
+     >>> isinstance(result['out'], list)
+     True

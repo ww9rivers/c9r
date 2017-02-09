@@ -1,0 +1,101 @@
+-*- mode:python; -*-
+Module test for c9r.util.filter.csv.IO/.Reader/.Writer
+
+Tests:
+
+    >>> import os, sys, time
+    >>> from c9r.pylog import logger
+    >>> from c9r.util.filter import Filter
+    >>> class Ofilter(Filter):
+    ...   def close(self):
+    ...     pass # Do not close on sys.stdout
+    ...   def tell(self):
+    ...     return 'N/A'
+    >>> with Ofilter(sys.stdout) as ff:
+    ...   ff.write('A line of text.\n')
+    ...   ff.write('Another line.\n')
+    A line of text.
+    Another line.
+
+Test 2: PipeLine for usertracking (Cisco PI wired) data:
+
+    >>> from c9r.util.csvfix import CSVFixer, Pipeline, InvalidInputFormat
+    >>> pl = Pipeline({ #'skip-till': '^Last Seen,',
+    ...                "filters":   [ "CiscoPI.Normalizer" ]
+    ...               })
+    >>> class NullFilter(object):
+    ...   '''
+    ...   A filter counts the number of records passed through.
+    ...   '''
+    ...   def close(self):
+    ...     pass
+    ...   def tell(self):
+    ...     return 'N/A'
+    ...   def write(self, data):
+    ...     global filtered
+    ...     logger.debug(data.strip())
+    ...     filtered += 1
+    >>> null = NullFilter()
+    >>> filtered = 0
+    >>> pl('zips/usertracking_20150331_140015_629.csv', null) == filtered > 0
+    True
+
+Test 3: PipeLine on wifitracking (Cisco PI wireless) data:
+
+    >>> p2 = Pipeline({'skip-till': '^Last Seen,',
+    ...                "filters":   [ "cisco.PINormalizer" ],
+    ...                'read-header': True,
+    ...                'header': [
+    ...                'LastSeen', 'MACAddress', 'Vendor', 'IPAddress', 'DeviceIPAddress', 'Port', 'VLANID',
+    ...                'State80211', 'Protocol', 'EndpointType', 'User', 'ConnectionType', 'LastSessionLength',
+    ...                'ConnectedInterface', 'AccessTechnologyType',
+    ...                'APName', 'APIPAddress', 'APMACAddress', 'APMapLocation', 'SSID', 'Profile', 'HostName',
+    ...                'CCX', 'E2E', 'AuthenticationMethod', 'GlobalUnique', 'LocalUnique', 'LinkLocal']
+    ...               })
+    >>> filtered = 0
+    >>> datafile = 'zips/wifitracking_20141107_082014_166.csv'
+    >>> try:
+    ...   p2(datafile, null) == filtered > 0
+    ... except IOError:
+    ...   'Make sure you have the data file: {0}'.format(datafile)
+    True
+
+Test 4: Test "input-format" configuration
+
+    >>> from StringIO import StringIO
+    >>> try:
+    ...   p3 = Pipeline({ 'input-format': 'invalid' })
+    ... except InvalidInputFormat:
+    ...   'Success!'
+    'Success!'
+    >>> jsodata = StringIO('{"a": 123}\n{"a": 45}')
+    >>> try:
+    ...   p4 = Pipeline({ 'input-format': 'json', 'header': [ 'a' ], 'dialect': 'nix' })
+    ...   p4(jsodata, Ofilter(sys.stdout))
+    ... except InvalidInputFormat:
+    ...   'Failed!'
+    ... # Expecting 3 lines: 123 / 45 / 2 (number of lines)
+    "123"
+    "45"
+    2
+
+Test 5: Test "postprocess" feature
+
+    >>> temp = '/tmp/csvfix-test.csv'
+    >>> tempz = temp+'.xz'
+    >>> if os.path.isfile(tempz):
+    ...   os.unlink(tempz)
+    >>> with open(temp, 'w') as ftemp:
+    ...   ftemp.write('''Put some random lines of
+    ... test before the "color,value" line, which
+    ... is the real start of the CSV part of this file.
+    ... 
+    ... color,value
+    ... red,ff0000
+    ... green,00ff00
+    ... blue,0000ff
+    ... ''')
+    >>> class CSVFixerTest5(CSVFixer):
+    ...   def_conf = 'test/csvfix-test.json'
+    >>> fix = CSVFixerTest5()
+    >>> fix()

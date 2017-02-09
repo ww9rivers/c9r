@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# -*- mode:python -*-
+#
+# $Id$
+#
+#	Remotely 'cat' a file, via SSH.
+
+import urllib2
+from c9r import app, jsonpy
+
+
+class RCat(app.Command):
+    def_conf = ['.rcat.json']
+
+    def rcat(self, rfile):
+        '''Parse given filename and print its contents out to stdout.'''
+        
+        pass
+
+    def __call__(self):
+        ''' Go through given list of file names and print them out to stdout.
+        '''
+        for rfile in self.args:
+            rcat(rfile)
+        return 0
+
+
+if __name__ == '__main__':
+    RCat()()

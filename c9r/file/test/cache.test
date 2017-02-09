@@ -1,0 +1,40 @@
+-*- mode:python; -*-
+
+Test 1: FileCache
+
+>>> import random, os, time
+>>> import c9r.pylog
+>>> from c9r.util import jso
+>>> from c9r.file.cache import FileCache
+>>> if 'DEBUG' in os.environ: c9r.pylog.set_debug()
+>>> cconf = dict(path='/tmp/cache-test', window=2)
+>>> fc = FileCache(initconf=cconf)
+>>> fc['window']
+2
+>>> vset = '.'
+>>> ccname = 'cache-{0}'.format(time.time())
+>>> data = dict(random=random.randint(0, 99999), time=time.time())
+>>> fc.put(vset, ccname, data)
+>>> ret = fc.get(vset, ccname)
+>>> ret == data
+True
+>>> fc.clear()
+>>> del fc
+
+Test 2: Using Cache.__make__:
+
+>>> from c9r.util.cache import Cache
+>>> fc2 = Cache.__make__('c9r.file.cache.FileCache', initconf=cconf)
+>>> data = dict(random=random.randint(0, 99999), time=time.time())
+>>> fc2.put(vset, ccname, data)
+>>> ret = fc2.get(vset, ccname)
+>>> ret == data
+True
+>>> fc2.clear()
+>>> del fc2
+
+Test 3: Default cache window
+
+>>> fc3 = FileCache()
+>>> fc3['window'] == Cache.defaults['window']
+True

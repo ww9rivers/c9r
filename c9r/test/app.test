@@ -1,0 +1,36 @@
+# -*- mode: python; -*-
+Unit test (with 'app.json') for app.py
+
+Test 1: Logger
+
+    >>> import os, sys
+    >>> from c9r.app import Command
+    >>> import c9r.pylog
+    >>> from c9r.pylog import logger
+    >>> if 'DEBUG' in os.environ:
+    ...   c9r.pylog.set_debug()
+    >>> sys.argv += [ '-c', 'test/app.json', '-c', 'no-such.json', '-c', '--1' ]
+    >>> app = Command()
+    >>> logger.debug('app.config() = {0}'.format(repr(app.config())))
+    >>> logger.debug(format(sys.argv))
+    >>> logger.debug('Testing DEBUG logging')
+    >>> logger.debug('Testing DEBUG logging with stdout')
+    >>> logger.info('INFO message')
+    >>> logger.warn('WARNING message')
+    >>> logger.error('ERROR message')
+    >>> logger.fatal('FATAL message')
+    >>> len(logger.handlers)
+    1
+
+Test 2: app.config()
+
+    >>> app.config()
+    <class 'c9r.jsonpy.Thingy'>({'true': True, 'key': 'value'})
+    >>> app.config('true')
+    True
+    >>> app.config('key')
+    'value'
+    >>> app.config('none')==None
+    True
+    >>> app.clear_config()
+    >>> app.config()

@@ -1,0 +1,8 @@
+-*- mode:python; -*-
+Unit tests for logfiler.py
+
+Test 0: Setup
+
+  >>> from c9r.util.logfiler import Filer, Main
+  >>> app = Main()
+  >>> app()

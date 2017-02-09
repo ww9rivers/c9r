@@ -1,0 +1,30 @@
+# -*- mode:python; -*-
+
+Test document for ustore.py:
+
+    >>> from c9r.util.ustore import JSON64
+    >>> t = JSON64()
+    >>> t['pw'] = 'password'
+    >>> t['pw']
+    'cGFzc3dvcmQ='
+    >>> t.get('pw')
+    'password'
+    >>> t['pass'] = """line1
+    ...   line2"""
+    >>> t['pass']
+    'bGluZTEKICBsaW5lMg=='
+    >>> t.get('pass')
+    'line1\n  line2'
+    >>> with JSON64('ustore-test.json') as tf:
+    ...   tf.users[0]
+    ...   tf.users[0]['password']
+    ...   tf.users[0].get('password')
+    ...   tf.users.append(JSON64(tf.users[0]))
+    ...   tf.users[1]['password']
+    ...   tf.users[1].get('password')
+    ...   tf.__save__()
+    {'password': 'cGFzc3dvcmQx', 'user': 'user1'}
+    'cGFzc3dvcmQx'
+    'cGFzc3dvcmQx'
+    'cGFzc3dvcmQx'
+    'password1'

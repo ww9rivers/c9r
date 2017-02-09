@@ -1,0 +1,13 @@
+# -*- mode:python; -*-
+
+Test 1: Testing l3.default_gateway() to make sure it gets the default gateway
+        that is in the system "netstat -rn" command.
+
+     >>> import subprocess
+     >>> from c9r.net import l3
+     >>> gw = l3.default_gateway()
+     >>> gw != '' and gw != None
+     True
+     >>> routes = subprocess.check_output(['netstat', '-rn'])
+     >>> gw in routes
+     True

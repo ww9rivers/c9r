@@ -1,0 +1,19 @@
+{
+"Version":	"$Id$",
+
+	"path":	"/app/var/device-reports",
+	"tasks":
+	{
+		"csvfix-test":
+		{
+			"disabled":	false,
+			"pattern":	"/tmp/csvfix-t*.csv",
+			"destination":	"/tmp/csvfix-test",
+			"skip-till":	"^color,value$",
+			"postprocess":	"xz",
+			"write-header":	true
+		}
+	},
+
+"":	" - end - "
+}

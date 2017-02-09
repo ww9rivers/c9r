@@ -1,0 +1,37 @@
+{"": [ "$Id$",
+
+	"Configuration for downloader.py to download Splunk Enterprise packages.",
+	""
+],
+
+"base_url":		"https://www.splunk.com",
+"product_url":		"https://www.splunk.com/en_us/download/splunk-enterprise.html",
+"download_base":	"https://download.splunk.com/products/",
+
+"package_regex":	"\\s+onclick=\"handleDownload\\('([^']+)'",
+"path_regex":		"/products/(?P<product>[^/]+)/releases/(?P<version>[^/]+)/(?P<os>[^/]+)/[^-]+-[^-]+-(?P<build>[^-]+)",
+
+"version":	"6.4.1",
+"build":	"debde650d26e",
+"path":		"{product}/releases/{version}/{os}",
+
+"products": {
+	"splunk": {
+		"linux":	[
+			"splunk-{version}-{build}-linux-2.6-x86_64.rpm",
+			"splunk-{version}-{build}-Linux-x86_64.tgz"
+		],
+		"windows":	"splunk-{version}-{build}-x64-release.msi"
+	},
+	"universalforwarder": {
+		"linux":	[
+			"splunkforwarder-{version}-{build}-Linux-x86_64.tgz",
+			"splunkforwarder-{version}-{build}-linux-2.6-x86_64.rpm"
+		],
+		"windows":	"splunkforwarder-{version}-{build}-x64-release.msi",
+		"aix":		"splunkforwarder-{version}-{build}-AIX-powerpc.tgz"
+	}
+},
+
+"":	" - End - "
+}

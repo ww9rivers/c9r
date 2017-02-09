@@ -1,0 +1,51 @@
+-*- mode:python; -*-
+$Id: mac.txt,v 1.1 2015/10/26 20:11:46 weiwang Exp $
+Unit test for c9r.net.mac
+
+Test 1: Good MAC addresses:
+
+    >>> from c9r.net.mac import MACFormat, InvalidMACAddress, split
+    >>> MACFormat.none('AA.BB.CC.DD.EE.FF')
+    'aabbccddeeff'
+    >>> MACFormat.dash('1122.3344.5566')
+    '11-22-33-44-55-66'
+    >>> MACFormat.ieee('1122.3344.5566')
+    '11:22:33:44:55:66'
+    >>> MACFormat.cisco('11:22:33:44:55:66')
+    '1122.3344.5566'
+
+Test 2: Ugly MAC addresses:
+
+    >>> MACFormat.none('AA.BB.CC.DD.EE.F')
+    'aabbccddee0f'
+    >>> MACFormat.dash('1122.3344.55')
+    '11-22-33-44-00-55'
+    >>> MACFormat.ieee('1122.3344.66')
+    '11:22:33:44:00:66'
+    >>> MACFormat.cisco('11:22:33:44:5:6')
+    '1122.3344.0506'
+    >>> MACFormat.ieee('11:22:33:44:5:6')
+    '11:22:33:44:05:06'
+
+Test 3: Invalid MAC addresses
+
+    >>> try:
+    ...   MACFormat.none('AA.BB.CC.DD.EE')
+    ... except InvalidMACAddress as ex:
+    ...   str(ex)
+    'Invalid MAC address: AA.BB.CC.DD.EE'
+    >>> try:
+    ...   MACFormat.dash('1122.3344')
+    ... except InvalidMACAddress as ex:
+    ...   str(ex)
+    'Invalid MAC address: 1122.3344'
+
+Test 4: c9r.net.mac.split
+    >>> split('12345')
+    ['00', '00', '00', '01', '23', '45']
+    >>> split('12.34.5')
+    ['00', '12', '00', '34', '00', '05']
+    >>> split('1234.5678.9')
+    ['12', '34', '56', '78', '00', '09']
+    >>> split('11:22:33:44:5:6')
+    ['11', '22', '33', '44', '05', '06']

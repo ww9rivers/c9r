@@ -1,0 +1,52 @@
+-*- mode:python; -*-
+
+Test 1:
+
+    >>> import os, time
+    >>> import c9r.file.util as fu
+    >>> fdir = os.path.join('test', 'test-{0}'.format(time.time()))
+    >>> pwd = os.getcwd()
+    >>> fu.forge_path(fdir) == pwd
+    True
+    >>> os.path.isdir(os.path.join(os.getcwd(), fdir))
+    True
+    >>> fpath = os.path.join(fdir, 'c9r-file-util-test.{0}'.format(time.time()))
+    >>> f = open(fpath, 'wb')
+    >>> fu.created_before(fpath, 100)
+    False
+    >>> time.sleep(2)
+    >>> fu.modified_before(fpath, 2)
+    True
+    >>> f.write('123')
+    >>> f.close()
+    >>> fu.modified_before(fpath, 2)
+    False
+    >>> fu.created_before(fpath, 2)
+    True
+    >>> try:
+    ...   fu.created_before(fpath, '2x')
+    ... except ValueError as ex:
+    ...   print(ex)
+    Invalid time unit: 'x'
+    >>> fu.created_before(fpath, '2s')
+    True
+    >>> fu.created_before(fpath, '2h')
+    False
+    >>> fu.created_before(fpath, '2w')
+    False
+    >>> os.unlink(fpath)
+    >>> os.rmdir(fdir)
+
+Test 2: Forge an absolute path:
+
+    >>> ftest = '/tmp/test'
+    >>> fdir = os.path.join(ftest, 'test-{0}'.format(time.time()))
+    >>> os.path.isabs(fdir)
+    True
+    >>> pwd = os.getcwd()
+    >>> fu.forge_path(fdir) == pwd
+    True
+    >>> os.path.isdir(fdir)
+    True
+    >>> os.rmdir(fdir)
+    >>> os.rmdir(ftest)

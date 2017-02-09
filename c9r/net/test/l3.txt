@@ -1,0 +1,27 @@
+-*- mode:python; -*-
+$Id: l3.txt,v 1.1 2015/12/04 14:57:53 weiwang Exp $
+
+Unit tests for l3.py
+
+    >>> import os
+    >>> from c9r.app import Command
+    >>> from c9r.pylog import logger
+    >>> from c9r.net import l3
+
+Test 1:
+
+    >>> app = Command()
+    >>> gw = l3.default_gateway()
+    >>> logger.debug('Gateway = {0}'.format(gw))
+    >>> l3.default_gateway() != ''
+    True
+
+    >>> ip = l3.get_lan_ip()
+    >>> logger.debug('IP = %s'%(ip))
+    >>> ip is None
+    False
+
+    >>> intf = l3.interfaces()
+    >>> logger.debug('Interfaces are:\n\t{0}'.format(intf))
+    >>> len(intf) > 0
+    True
