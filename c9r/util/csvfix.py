@@ -71,7 +71,7 @@ class CSVFixer(Command):
       skip-line     Skip a given number of lines.
       skip-pass     Skip pass a pattern.
       skip-till     Skip till a pattern.
-      times         Set to true to keep time stamps on files.
+      times         Set to true to keep time stamps on files. Defaults to false.
       write-header  True, if CSV column header is to be written to output (first line).
                     Defaults to false.
 

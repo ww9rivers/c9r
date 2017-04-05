@@ -69,6 +69,19 @@
 			"rename":	{ "([\\w_]+_\\d{8}).+": "{0}.csv" },
 			"":		"#"
 		},
+
+		"rogue_aps":
+		{
+			"disabled":	false,
+			"pattern":	"/app/var/pi/reports/rogue_aps/Rogue_AP_report_for_Splunk_*.csv",
+			"destination":	"/app/var/pi/reports/rogue_aps",
+			"postprocess":	"xz",
+			"skip-till":	"^Last Seen Time,",
+			"rename":	{ "Rogue_AP_report_for_Splunk_(\\d+)_.*": "RogueAPs-{0}" },
+			"file-mode":	"a",
+			"read-header":	true,
+			"write-header":	true
+		},
 		
 		"":	"V2 tasks ------------------------------------------------------------",
 		"Unique_clients_for_Splunk*.*":
