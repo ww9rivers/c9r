@@ -27,7 +27,7 @@ setup(name='c9r',
       platforms='Windows, Linux, Mac, Unix',
       packages=[
         'c9r', 'c9r/cli', 'c9r/csv', 'c9r/file', 'c9r/html', 'c9r/mail', 'c9r/net',
-        'c9r/util',
+        'c9r/util', 'c9r/util/filter',
         ],
       package_data={
         'c9r/util':
