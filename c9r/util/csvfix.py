@@ -393,10 +393,8 @@ def atexit_process(filename, act):
         ]):
         cmd = (act if isinstance(act, list) else [act])+[filename]
         try:
-            stdout = subprocess.check_output(cmd)
-            if stdout:
-                logger.info(stdout)
-        except CalledProcessError as err:
+            subprocess.check_call(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
             logger.error('Error from command {0}\n{1}'.format(cmd, err.output))
         return
     logger.debug('Unknown postprocess action: "{0}" "{1}"'.format(act, filename))

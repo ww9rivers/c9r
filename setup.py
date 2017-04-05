@@ -29,6 +29,13 @@ setup(name='c9r',
         'c9r', 'c9r/cli', 'c9r/csv', 'c9r/file', 'c9r/html', 'c9r/mail', 'c9r/net',
         'c9r/util',
         ],
+      package_data={
+        'c9r/util':
+            [
+            'c9r/util/csvfix-conf-EMPF2.json',
+            'c9r/util/csvfix-conf.json'
+            ]
+        },
 
       install_requires=[
         'gevent'

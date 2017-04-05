@@ -77,7 +77,7 @@
 			"destination":	"/app/var/pi/reports/rogue_aps",
 			"postprocess":	"xz",
 			"skip-till":	"^Last Seen Time,",
-			"rename":	{ "Rogue_AP_report_for_Splunk_(\\d+)_.*": "RogueAPs-{0}" },
+			"rename":	{ "Rogue_AP_report_for_Splunk_(\\d+)_.*": "RogueAPs-{0}.csv" },
 			"file-mode":	"a",
 			"read-header":	true,
 			"write-header":	true
