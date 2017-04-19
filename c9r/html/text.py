@@ -115,8 +115,11 @@ class Parser(HTMLParser):
     def __repr__(self):
         return self.text()
 
-    def __init__(self):
+    def __init__(self, init):
+        '''Initialize the parser with optional initial value.
+        '''
         HTMLParser.__init__(self)
+        if init: self.add_data(init)
 
 if __name__ == '__main__':
     import doctest, os
