@@ -10,6 +10,7 @@ Package as a configurable Privileged Information Manager module.
 '''
 import os, stat
 from c9r.file.config import Config, TextPassword
+from c9r.pylog import logger
 
 
 class PIM(Config):
@@ -26,9 +27,9 @@ class PIM(Config):
     def get(self, id, cpw=None):
         '''Get the credential for "id".
         '''
-        obj = self[id]
-        pw = obj.get('password')
+        pw = cpw or self[id].get('password')
         if pw is None: raise Exception("Password for id '{0}' not found.".format(id))
+        logger.debug('Credential resolved for user ({0})'.format(id))
         return TextPassword(pw).cleartext()
 
     def __init__(self, conf=None):
