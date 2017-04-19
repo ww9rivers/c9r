@@ -5,6 +5,7 @@
 ## Reference: http://www.ianlewis.org/en/parsing-email-attachments-python
 ##
 
+import re
 from StringIO import StringIO
 from base64 import b64decode
 from email.Header import decode_header
@@ -102,6 +103,13 @@ class Parser(email.parser.Parser):
         msgobj = self.parse(StringIO(content) if isinstance(content, str) else content)
         subject = parse_header('Subject', msgobj)
         date = parse_header('Date', msgobj)
+        received = []
+        for part in msgobj.get_all('Received'):
+            lx = self.re_received.split(part)
+            tmp = dict(zip(lx[1::2], [ x.strip() for x in lx[2::2] ]))
+            tx = tmp.get(';')
+            if tx: tmp['time'] = parse_time(tx)
+            received.append(tmp)
         fromaddr = parse_addr(msgobj, 'From')
         if date:
             date = date.replace(',', '')
@@ -133,17 +141,20 @@ class Parser(email.parser.Parser):
         return {
             'subject' : subject,
             'date' : date,
+            'received': received,
+            # 'received': sorted(received, key=lambda k: k['time']),
             'body' : body,
             'html' : html,
             'from' : fromaddr,
             'to' : parse_addr(msgobj, 'To'),
             'cc' : parse_addr(msgobj, 'CC'),
             'bcc' : parse_addr(msgobj, 'BCC'),
-            'attachments': attachments,
+            'attachments': attachments
             }
 
     def __init__(self):
         email.parser.Parser.__init__(self)
+        self.re_received = re.compile('(from|by|via|with|id|for|;)')
 
 if __name__ == '__main__':
     import doctest

@@ -15,6 +15,7 @@
 
 import base64, imaplib
 from c9r import jsonpy
+from c9r.pim import PIM
 from c9r.pylog import logger
 
 
@@ -68,13 +69,15 @@ class Mailbox(imaplib.IMAP4_SSL):
         return self.uid('STORE', auid, '-FLAGS', '(\SEEN)')
 
     def __init__(self, dcon):
+        '''Initialize an IMAP4 client with given configuration "dcon".
+
+        Also, if an password is not provided in the given config, attempt to
+        load /app/etc/logins.json as a 
+        '''
         imaplib.IMAP4_SSL.__init__(self, dcon.imap.server, dcon.imap.port)
-        try:
-            pw = base64.b64decode(dcon.password)
-        except:
-            # If decoding fails, assume it is already decoded.
-            pw = dcon.password
-        self.login(dcon.user, pw)
+        uid = dcon.user
+        logger.debug('IMAP = ({0}), user = {1}'.format(dcon.imap, uid))
+        self.login(uid, PIM().get(uid, dcon.password))
         self.select()
 
 
