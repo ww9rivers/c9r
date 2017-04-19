@@ -86,7 +86,7 @@ class Config(object):
 
     __getattr__ = __getitem__
 
-    def __init__(self, conf=[], initconf=None, update=None):
+    def __init__(self, conf=None, initconf=None, update=None):
         '''Initialize this object, loading all configuration.
 
         The last item in the list(def_conf+conf) is used for saving this obejct.
@@ -96,8 +96,7 @@ class Config(object):
         /initconf/      Initial configuration, either a dict or an object with dict().
         /update/        Optional update to initconf and conf file(s).
         '''
-        if conf != None:
-            conf = list(conf if isinstance(conf, list) else [conf])
+        conf = [] if conf is None else list(conf if isinstance(conf, list) else [conf])
         self.CONF = conf_update(jso.Storage(self.defaults), initconf)
         xf = None
         to_include = list()

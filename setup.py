@@ -5,13 +5,9 @@
 
 from setuptools import setup
 
-subpackages = [
-    'cmdb', 'cvspy', 'db', 'power', 'snmp',
-    'test', 'tools', 'ui'
-    ]
 
 setup(name='c9r',
-      version='0.1.0',
+      version='0.2.0',
       description="""Python utility modules in the 'c9r' namespace.""",
       long_description="""
         Utility modules in the 'c9r' namespace, including IP networking, etc.
@@ -27,6 +23,7 @@ setup(name='c9r',
       platforms='Windows, Linux, Mac, Unix',
       packages=[
         'c9r', 'c9r/cli', 'c9r/csv', 'c9r/file', 'c9r/html', 'c9r/mail', 'c9r/net',
+        'c9r/pim',
         'c9r/util', 'c9r/util/filter',
         ],
       package_data={
