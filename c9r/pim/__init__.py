@@ -14,7 +14,7 @@ from c9r.pylog import logger
 
 
 class PIM(Config):
-    '''App-scoped Pricleged Information Manaement module.
+    '''App-scoped Privileged Information Manaement module.
     '''
     def_conf = [ '/app/etc/pim-conf.json' ]
     def check_privilege(self, fname):
