@@ -35,7 +35,8 @@ setup(name='c9r',
         },
 
       install_requires=[
-        'gevent'
+        'gevent',
+        'requests'
         ],
       include_package_data=True,
       # test_suite='nose.collector',
