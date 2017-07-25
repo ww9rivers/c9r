@@ -93,6 +93,9 @@ class Command(object):
     def log_info(self, msg):
         logger.info(msg)
 
+    def log_warn(self, msg):
+        logger.warn(msg)
+
     def usage(self, params=None):
         """
         Print the __doc__ string of this app. An app subclassing c9r.app.Command should
