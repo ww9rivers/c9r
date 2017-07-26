@@ -147,7 +147,7 @@ class CSVFixer(Command):
                 }
             }
         }
-    def_conf = '/opt/miops/etc/csvfix-conf.json'
+    def_conf = '/app/miops/etc/csvfix-conf.json'
 
     def __call__(self):
         '''Go through list of files to monitor and fix them.
