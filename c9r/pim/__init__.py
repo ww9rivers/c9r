@@ -27,7 +27,11 @@ class PIM(Config):
     def get(self, id, cpw=None):
         '''Get the credential for "id".
         '''
-        pw = cpw or self[id].get('password')
+        if cpw:
+            pw = cpw
+        else:
+            ux = self[id]
+            pw = ux if isinstance(ux, basestring) else ux.get('password') if ux else None
         if pw is None: raise Exception("Password for id '{0}' not found.".format(id))
         logger.debug('Credential resolved for user ({0})'.format(id))
         return TextPassword(pw).cleartext()
