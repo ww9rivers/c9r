@@ -1,0 +1,37 @@
+-*- mode: python -*-
+Tests for c9r.html.text.Parser():
+
+    >>> import doctest, os
+    >>> if 'DEBUG' in os.environ:
+    ...     import logging, c9r.pylog
+    ...     c9r.pylog.set_level(logging.DEBUG)
+    >>> from c9r.html.text import Parser
+    >>> h2t = Parser()
+    >>> h2t.feed('<body>')
+    >>> h2t.feed('<b><font size="2" face="Arial">Tier:</font><font face="Arial"></font> <font size="2" face="Tahoma">')
+    >>> h2t.feed('Platinum</font></b>')
+    >>> print h2t
+    Tier: Platinum
+    >>> h2t.feed(', Gold')
+    >>> print h2t
+    Tier: Platinum, Gold
+    >>> h2t.reset().feed('<body>Bronze<br>Incident<p>Text</p><div>Block</div></body>')
+    >>> print h2t
+    Bronze
+    Incident
+    Text
+    Block
+    >>> h2t.reset().feed('<body><!-- This is a comment --></body>')
+    >>> print h2t
+    <BLANKLINE>
+    >>> h2t.reset().feed('<body><!-- This is a')
+    >>> h2t.feed('multi-line\\n\\ncomment.')
+    >>> h2t.feed('--></body>')
+    >>> print h2t
+    <BLANKLINE>
+    >>> h2t.reset().feed('<body>This&nbsp;and that</body>')
+    >>> h2t
+    This and that
+    >>> h2t.reset().feed(u'ASCII v. 中–文')
+    >>> h2t.text().decode('utf-8') == u'ASCII v. 中–文'
+    True
