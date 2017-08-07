@@ -20,38 +20,6 @@ from c9r.pylog import logger
 class Parser(HTMLParser):
     '''
     Module that converts HTML to plain text.
-
-    Tests:
-
-    >>> h2t = Parser()
-    >>> h2t.feed('<body>')
-    >>> h2t.feed('<b><font size="2" face="Arial">Tier:</font><font face="Arial"></font> <font size="2" face="Tahoma">')
-    >>> h2t.feed('Platinum</font></b>')
-    >>> print h2t
-    Tier: Platinum
-    >>> h2t.feed(', Gold')
-    >>> print h2t
-    Tier: Platinum, Gold
-    >>> h2t.reset().feed('<body>Bronze<br>Incident<p>Text</p><div>Block</div></body>')
-    >>> print h2t
-    Bronze
-    Incident
-    Text
-    Block
-    >>> h2t.reset().feed('<body><!-- This is a comment --></body>')
-    >>> print h2t
-    <BLANKLINE>
-    >>> h2t.reset().feed('<body><!-- This is a')
-    >>> h2t.feed('multi-line\\n\\ncomment.')
-    >>> h2t.feed('--></body>')
-    >>> print h2t
-    <BLANKLINE>
-    >>> h2t.reset().feed('<body>This&nbsp;and that</body>')
-    >>> h2t
-    This and that
-    >>> h2t.reset().feed(u'ASCII v. 中–文')
-    >>> h2t.text().decode('utf-8') == u'ASCII v. 中–文'
-    True
     '''
     def add_char(self, c):
         '''Add a character to the text. Convert &nbsp; to regular space for text.'''
@@ -115,15 +83,12 @@ class Parser(HTMLParser):
     def __repr__(self):
         return self.text()
 
-    def __init__(self, init):
+    def __init__(self, init=None):
         '''Initialize the parser with optional initial value.
         '''
         HTMLParser.__init__(self)
         if init: self.add_data(init)
 
 if __name__ == '__main__':
-    import doctest, os
-    if 'DEBUG' in os.environ:
-        import logging, c9r.pylog
-        c9r.pylog.set_level(logging.DEBUG)
-    doctest.testmod()
+    import doctest
+    doctest.testfile('test/text.test')
