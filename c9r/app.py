@@ -199,4 +199,4 @@ class Command(object):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testfile('test/app.test')
+    doctest.testfile('tests/app.test')

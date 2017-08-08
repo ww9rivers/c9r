@@ -9,7 +9,7 @@ Test 1: Logger
     >>> from c9r.pylog import logger
     >>> if 'DEBUG' in os.environ:
     ...   c9r.pylog.set_debug()
-    >>> sys.argv += [ '-c', 'test/app.json', '-c', 'no-such.json', '-c', '--1' ]
+    >>> sys.argv += [ '-c', 'tests/app.json', '-c', 'no-such.json', '-c', '--1' ]
     >>> app = Command()
     >>> logger.debug('app.config() = {0}'.format(repr(app.config())))
     >>> logger.debug(format(sys.argv))

@@ -149,4 +149,4 @@ def _decode_list(data):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testfile('test-jsonpy.txt')
+    doctest.testfile('tests/jsonpy.test')

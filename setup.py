@@ -7,7 +7,7 @@ from setuptools import setup
 
 
 setup(name='c9r',
-      version='0.2.0',
+      version='0.2.1',
       description="""Python utility modules in the 'c9r' namespace.""",
       long_description="""
         Utility modules in the 'c9r' namespace, including IP networking, etc.
@@ -39,6 +39,12 @@ setup(name='c9r',
         'requests'
         ],
       include_package_data=True,
-      # test_suite='nose.collector',
-      # tests_require=['nose'],
+
+      #
+      # ----    Test using nosetests
+      #
+      # Ref.: http://python-packaging.readthedocs.io/en/latest/testing.html
+      #
+      test_suite='nose.collector',
+      tests_require=['nose'],
       zip_safe=False)
