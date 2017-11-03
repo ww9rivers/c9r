@@ -19,6 +19,13 @@ Test 1: Testing v1 CiscoPI.Normalizer
     {'MACAddress': '0018fe8ae03d', 'User': 'Domain/User', 'LastSessionLength': 62}
     >>> t12.close()
 
+Test 1.3: Prime 3.1 Unique Clients report changed the "Last Session Length" field: '2 hrs 10 min 2 sec' => '2hrs10min 2sec'
+
+    >>> with Normalizer(Ofilter(sys.stdout)) as t13:
+    ...   for data in [{'MACAddress': '00:00:a1:01:a8:7b', 'User': 'normal-user', 'LastSessionLength': '2hrs10min 2sec'}]:
+    ...     t13.write(data)
+    {'MACAddress': '0000a101a87b', 'User': 'normal-user', 'LastSessionLength': 7802}
+
 Test 2: Test v2 CiscoPI.Wired, CiscoPI.Wireless, and Vendor normalization:
 
     >>> apple_inc = {
