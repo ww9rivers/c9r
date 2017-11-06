@@ -41,7 +41,7 @@ setup(name='c9r',
       include_package_data=True,
 
       #
-      # ----    Test using nosetests
+      # ----    Test using nosetests:  python ./setup.py nosetests
       #
       # Ref.: http://python-packaging.readthedocs.io/en/latest/testing.html
       #
