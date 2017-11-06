@@ -45,4 +45,4 @@ class PIM(Config):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testfile('test/pim.text')
+    doctest.testfile('tests/pim.text')

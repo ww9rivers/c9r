@@ -7,3 +7,5 @@ Unit test for pim/__init__.py
 'changeme'
 >>> pim.get('test', 'Y2hhbmdlaXQ=')
 'changeit'
+>>> pim.get('test-2')
+''
