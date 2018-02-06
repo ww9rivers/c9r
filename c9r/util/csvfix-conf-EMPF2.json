@@ -84,10 +84,10 @@
 		},
 		
 		"":	"V2 tasks ------------------------------------------------------------",
-		"Unique_clients_for_Splunk*.*":
+		"Unique_clients_for_Splunk*.*[pv]":
 		{
 			"disabled":	false,
-			"delete":	true,
+			"postprocess":	"xz",
 			"filters":	[ "CiscoPI.Wired" ],
 			"destination":	"/app/var/pi/v2/wired_devices",
 			"skip-till":	"^Last Seen,",
@@ -103,7 +103,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk_*.*":
+		"Unique_clients_for_Splunk_*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -132,7 +132,7 @@
 		},
 
 		"":	"V2.1 tasks ----------------------------------------------------------",
-		"Unique[_]clients_for_Splunk*.*":
+		"Unique[_]clients_for_Splunk*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -151,7 +151,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk[_]*.*":
+		"Unique_clients_for_Splunk[_]*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -178,7 +178,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for[_]Splunk_*.*":
+		"Unique_clients_for[_]Splunk_*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
