@@ -20,9 +20,11 @@ Tests for class Thingy(Null):
     >>> xo = Thingy(dict(a='aaa', b='bbb'))
     >>> xo.a
     'aaa'
-    >>> xo.items()
-    [('a', 'aaa'), ('b', 'bbb')]
-    >>> from StringIO import StringIO
+    >>> xo['b']
+    'bbb'
+    >>> len(xo.items())
+    2
+    >>> from io import StringIO
     >>> x1 = Thingy(StringIO('{ "a" : "A-value", "b" : "B-value" }'))
     >>> x1.b
     'B-value'

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #       Setup for the c9r Python module.
 #
@@ -22,10 +22,10 @@ setup(name='c9r',
       url='https://github.com/ww9rivers/c9r',
       platforms='Windows, Linux, Mac, Unix',
       packages=[
-        'c9r', 'c9r/cli', 'c9r/csv', 'c9r/file', 'c9r/html', 'c9r/mail', 'c9r/net',
-        'c9r/pim',
-        'c9r/util', 'c9r/util/filter',
-        ],
+          'c9r', 'c9r/cli', 'c9r/csv', 'c9r/file', 'c9r/html', 'c9r/mail', 'c9r/net',
+          'c9r/pim',
+          'c9r/util', 'c9r/util/filter',
+      ],
       package_data={
         'c9r/util':
             [
@@ -35,8 +35,10 @@ setup(name='c9r',
         },
 
       install_requires=[
-        'gevent',
-        'requests'
+          'gevent',
+          'paramiko',
+          'pysnmp',
+          'requests'
         ],
       include_package_data=True,
 

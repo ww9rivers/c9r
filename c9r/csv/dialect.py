@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-#
-# $Id$
+#!/usr/bin/env python3
+
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
         http://opensource.org/licenses/gpl-3.0.html
@@ -31,12 +30,12 @@ class Annotated(csv.Dialect):
         csv.register_dialect(self.name, **fmtparams)
 
 
-class AnnotatedFile(file):
+class AnnotatedFile(object):
     '''An object supporting the "iterator" protocol for reading CSV file with annotations.'''
     def readline(self):
         '''Read next line from the file. Empty the line buffer first if it's not.'''
         if self.linebuffer is None:
-            return file.readline(self)
+            return self.file.readline(self)
         line = self.linebuffer
         self.linebuffer = None
         return line
@@ -44,9 +43,33 @@ class AnnotatedFile(file):
     def peek(self):
         '''Peek into the next line in this file.'''
         if self.linebuffer is None:
-            self.linebuffer = file.readline(self)
+            self.linebuffer = self.file.readline(self)
         return self.linebuffer
 
-    def __init__(self, filename, mode='r'):
-        file.__init__(self, filename, (mode if mode else 'r')+'b')
+    def __init__(self, f, mode):
         self.linebuffer = None
+        if isinstance(f, str):
+            self.file = open(f, (mode if mode else 'r')+'b')
+        else:
+            self.file = f
+            self.close_file = (self.file is not f)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        if (not self.close_file):
+            return  # do nothing
+        # clean up
+        exit = getattr(self.file, '__exit__', None)
+        if exit is not None:
+            return exit(*args, **kwargs)
+        exit = getattr(self.file, 'close', None)
+        if exit is not None:
+            exit()
+
+    def __getattr__(self, attr):
+        return getattr(self.file, attr)
+
+    def __iter__(self):
+        return iter(self.file)

@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-##
-## $Id: jso.py,v 1.4 2015/06/01 13:40:07 weiwang Exp $
-##
+#!/usr/bin/env python3
+
 """
 | This file is part of the c9r package
 | Copyrighted by Wei Wang <ww@9rivers.com>
@@ -25,18 +23,18 @@ class Storage(dict):
     Example::
 
         >>> o = Storage(a=1)
-        >>> print o.a
+        >>> print(o.a)
         1
 
         >>> o['a']
         1
 
         >>> o.a = 2
-        >>> print o['a']
+        >>> print(o['a'])
         2
 
         >>> del o.a
-        >>> print o.a
+        >>> print(o.a)
         None
     """
     __slots__ = ()

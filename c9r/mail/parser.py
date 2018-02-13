@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ##      CVS: $Id: parser.py,v 1.6 2015/04/07 20:31:32 weiwang Exp $
 ##
@@ -6,9 +6,9 @@
 ##
 
 import re
-from StringIO import StringIO
+from io import StringIO
 from base64 import b64decode
-from email.Header import decode_header
+from email.header import decode_header
 import email, email.parser
 from email.utils import mktime_tz, parseaddr, parsedate_tz
 from c9r.pylog import logger

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 #       $Id: config.py,v 1.7 2015/12/04 14:55:28 weiwang Exp $
 '''

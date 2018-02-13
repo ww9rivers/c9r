@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #       $Id: __init__.py,v 1.7 2015/01/07 20:00:57 weiwang Exp $
 #
@@ -16,7 +16,7 @@ SuSE Enterprise server 11.1 -- This may be revisited later.
 
 from zope.interface import Interface, Attribute
 '''
-from cStringIO import StringIO
+from io import StringIO
 from c9r.pylog import logger
 
 

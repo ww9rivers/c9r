@@ -1,14 +1,13 @@
-#!/usr/bin/env python
-'''
-$Id: api.py,v 1.6 2015/12/04 15:01:50 weiwang Exp $
+#!/usr/bin/env python3
 
+'''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
 
 Copyright (c) 2009-2015, Wei Wang. All rights reserved.
 '''
 
-import netsnmp
+import pysnmp
 import gettext, os, re, socket, string
 from c9r.pylog import logger
 t = gettext.gettext
@@ -119,7 +118,7 @@ class SNMPAPI:
         return self.get_object(xoid, "STRING")
 
     def set(self, xoid, xtype, xvalue):
-	"""
+        """
         Set an SNMP object in this device.
         """
         vars = netsnmp.VarList(netsnmp.Varbind(xoid, None, xvalue, xtype))

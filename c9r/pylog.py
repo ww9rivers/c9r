@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # $Id: pylog.py,v 1.7 2015/08/13 21:39:54 weiwang Exp $
 '''
@@ -16,7 +16,7 @@ import os, sys
 import logging
 import logging.config
 import logging.handlers as Handlers
-from ConfigParser import NoSectionError
+from configparser import NoSectionError
 import __main__ as main
 
 script_file = getattr(main, '__file__', None)
@@ -49,7 +49,7 @@ def config(conf=None, defaults=None, disable_existing_loggers=True):
     try:
         logging.config.fileConfig(fname, defaults, disable_existing_loggers)
         PYLOG = dict(config=fname, name=name)
-    except NoSectionError:
+    except KeyError as err:
         pass
     logger = get_logger(name)
     logger.propagate = False
