@@ -31,10 +31,25 @@ class PIM(Config):
             pw = cpw
         else:
             ux = self[id]
-            pw = ux if isinstance(ux, basestring) else ux.get('password') if ux else None
+            pw = ux if isinstance(ux, str) else ux.get('password') if ux else None
         if pw is None: raise Exception("Password for id '{0}' not found.".format(id))
         logger.debug('Credential resolved for user ({0})'.format(id))
         return TextPassword(pw).cleartext()
+
+    def get_account(self, id, cpw=None):
+        '''Get the account by /id/.
+
+        A simple "account" format: base64.encode(nounce:user-id:user-pw)
+
+        TBD: To extend this format, a "{format}" field may be added after the nounce to specify
+        a protocol for decoding the rest of the fields.
+
+        @returns A tuple of (user, password), where /user/ may be /id/ or user id embedded in
+        the user account info.
+        '''
+        pw = self.get(id, cpw)
+        acc = pw.split(':')
+        return [acc[1], ':'.join(acc[2:])] if len(acc) > 2 else [id, pw]
 
     def __init__(self, conf=None):
         '''Initialize this object. Also: Check if the config files have proper access control.
@@ -42,7 +57,3 @@ class PIM(Config):
         for xf in self.def_conf+(conf if type(conf) is list else [] if conf is None else [conf]):
             self.check_privilege(xf)
         Config.__init__(self, conf)
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testfile('tests/pim.text')
