@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 
 import sys
@@ -8,11 +8,11 @@ def is_string(xvar):
     '''
     return isinstance(
         xvar,
-        basestring if (not 'major' in sys.version_info) or sys.version_info.major < 3
-        else str)
+        str if ('major' in sys.version_info and sys.version_info.major > 2)
+        else basestring)
 
 if __name__ == "__main__":
     '''Unit test
     '''
     import doctest
-    doctest.testfile('test/python.txt')
+    doctest.testfile('tests/python.txt')
