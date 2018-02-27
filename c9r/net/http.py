@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 $Id: http.py,v 1.2 2016/03/28 15:07:15 weiwang Exp $
 
@@ -12,6 +12,7 @@ File Uploader
 
 import os
 import requests
+import collections
 
 class HTTP4xx(BaseException):
     '''Base exception for all 400 HTTP exceptions.
@@ -20,12 +21,12 @@ class HTTP4xx(BaseException):
     def __init__(self):
         BaseException.__init__(self, self.HTTP4xxMsg)
 
-class HTTP5xx(StandardError):
+class HTTP5xx(Exception):
     '''Base error for all 500 HTTP exceptions.
     '''
     HTTP5xxMsg = 'HTTP5xx error'
     def __init__(self):
-        StandardError.__init__(self, self.HTTP5xxMsg)
+        Exception.__init__(self, self.HTTP5xxMsg)
 
 class BadRequest(HTTP4xx):
     HTTP4xxMsg = '400: Bad request'
@@ -139,10 +140,10 @@ def get(url, path='.', options={}):
 
     Reference: http://stackoverflow.com/questions/16694907/
     '''
-    if isinstance(path, basestring):
+    if isinstance(path, str):
         filename = os.path.join(path, url.split('/')[-1]) if os.path.isdir(path) else path
         f = open(filename, 'wb')
-    elif hasattr(path, 'write') and callable(getattr(path, 'write')):
+    elif hasattr(path, 'write') and isinstance(getattr(path, 'write'), collections.Callable):
         filename = '-'
         f = path
     # stream=True for larger files.
@@ -167,15 +168,15 @@ def put(files, url, data={}):
 
     Returns responses from Requests.post() in a dict, keyed by files.
     '''
-    if isinstance(files, basestring):
+    if isinstance(files, str):
         files = dict(file=files)
     status = dict()
-    for var,fdata in files.iteritems():
-        parts = { var: (fdata, open(fdata, 'rb') if isinstance(fdata, basestring) else fdata) }
+    for var,fdata in files.items():
+        parts = { var: (fdata, open(fdata, 'rb') if isinstance(fdata, str) else fdata) }
         status[fdata] = requests.post(url, files=parts, data=data)
     return status
 
 
 if __name__ == '__main__':
     import doctest
-    doctest.testfile('test/http.text')
+    doctest.testfile('tests/http.text')

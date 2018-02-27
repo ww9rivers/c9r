@@ -104,7 +104,7 @@ class CLI(object):
         regexs = [rex[1] % tuple('?P<%s>'%k for k in rex[0]) if isinstance(rex, list) else rex\
                       for rex in (self.regex
                                   if isinstance(self.regex, list)
-                                  else [self.regex] if isinstance(self.regex, basestring) else [])]
+                                  else [self.regex] if isinstance(self.regex, str) else [])]
         self.re = [re.compile(rex) for rex in regexs]
         #[ logger.debug('Regex = {0}'.format(rex)) for rex in regexs ]
         #logger.debug('Total regex = {0}'.format(len(self.re)))

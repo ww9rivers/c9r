@@ -131,7 +131,7 @@ def load_storage(read_fro):
     '''
     fp = None
     try:
-        fp = open(read_fro, 'r') if isinstance(read_fro, basestring) else read_fro
+        fp = open(read_fro, 'r') if isinstance(read_fro, str) else read_fro
         storage = json.load(fp)
     finally:
         if fp and fp != read_fro:
@@ -148,7 +148,7 @@ def save_storage(storage, save_to, indent=None):
     '''
     fp = None
     try:
-        fp = open(save_to, 'wb') if isinstance(save_to, basestring) else save_to
+        fp = open(save_to, 'wb') if isinstance(save_to, str) else save_to
         json.dump(storage, fp, indent=indent)
     finally:
         if fp and fp != save_to:

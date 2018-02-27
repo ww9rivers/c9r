@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 ## This program is licensed under the GPL v3.0, which is found at the URL below:
 ##	http://opensource.org/licenses/gpl-3.0.html
@@ -57,3 +57,9 @@ class PIM(Config):
         for xf in self.def_conf+(conf if type(conf) is list else [] if conf is None else [conf]):
             self.check_privilege(xf)
         Config.__init__(self, conf)
+
+''' Global instance of PIN
+
+This should be the only instance of PIM any program would need -- PIM should be a singleton.
+'''
+the_pim = PIM()
