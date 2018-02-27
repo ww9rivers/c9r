@@ -3,6 +3,8 @@
 \#*
 .*~
 *.egg-info
+.eggs/
+c9r/cisco
 tests/*.db
 tests/*.log
 build/
