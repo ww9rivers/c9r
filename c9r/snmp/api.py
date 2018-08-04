@@ -7,7 +7,7 @@ http://opensource.org/licenses/gpl-3.0.html
 Copyright (c) 2009-2015, Wei Wang. All rights reserved.
 '''
 
-import pysnmp
+from pysnmp.hlapi import *
 import gettext, os, re, socket, string
 from c9r.pylog import logger
 t = gettext.gettext
@@ -72,7 +72,11 @@ class SNMPAPI:
 
     def get(self, xoid, idx=None):
         ''' SNMP-get a specified object. '''
-        return self.S.get(netsnmp.VarList(netsnmp.Varbind(xoid, idx)))
+        g = getCmd(self.engine, self.community(),
+                   UdpTransportTarget((self.host, 161)),
+                   ContextData(),
+                   ObjectType(ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0)))
+        return next(g)
 
     def get_bits(self, xoid):
         '''
@@ -121,16 +125,18 @@ class SNMPAPI:
         """
         Set an SNMP object in this device.
         """
-        vars = netsnmp.VarList(netsnmp.Varbind(xoid, None, xvalue, xtype))
-        if self.S.set(vars):
-            return True
-        raise Exception("SNMPAPI::set failed: '%s', '%s', '%s'" % (xoid, xtype, xvalue))
+        g = setCmd(SnmpEngine(),
+                   CommunityData('public'),
+                   UdpTransportTarget(('demo.snmplabs.com', 161)),
+                   ContextData(),
+                   ObjectType(ObjectIdentity('SNMPv2-MIB', 'sysDescr', 0), 'Linux i386'))
+        next(g)
 
     def set_host(self, host):
         '''
         Set the destination host (name or IP address).
         '''
-        self.S.DestHost = host
+        self.host = host
 
     def walk(self, xoid, context=''):
         """
@@ -140,8 +146,29 @@ class SNMPAPI:
         @param	xctx	Optional context.
         @return A VarList of object(s) walked -- usually a table.
         """
-        vars = xoid if isinstance(xoid, netsnmp.VarList)\
-            else netsnmp.VarList(netsnmp.Varbind(xoid))
+        authdata = UsmUserData('usr-md5-none', 'authkey1')
+        if context:
+            self.S['Community'] += "@"+context
+        for (errorIndication,
+             errorStatus,
+             errorIndex,
+             varBinds) in nextCmd(SnmpEngine(),
+                                  UsmUserData('usr-md5-none', 'authkey1'),
+                                  UdpTransportTarget(('demo.snmplabs.com', 161)),
+                                  ContextData(),
+                                  ObjectType(ObjectIdentity('IF-MIB'))):
+            if errorIndication:
+                print(errorIndication)
+                break
+            elif errorStatus:
+                print('%s at %s' % (errorStatus.prettyPrint(),
+                                    errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+                break
+            else:
+                for varBind in varBinds:
+                    print(' = '.join([x.prettyPrint() for x in varBind]))
+                    
+        vars = xoid if isinstance(xoid, netsnmp.VarList) else netsnmp.VarList(netsnmp.Varbind(xoid))
 
         '''
         Context index: Not sure if this is a Cisco specific extension to SNMP v1/v2c
@@ -149,8 +176,6 @@ class SNMPAPI:
         	per-context MIB indexing.
         xropw = SNMPAPI.config.v2.ro_community
         '''
-        if context:
-            self.S['Community'] += "@"+context
         self.S.walk(vars)
         if context:
             self.S['Community'] = self.S['Community'][0:-(1+len(context))]
@@ -236,8 +261,8 @@ class SNMPAPI:
         '''
         logger.debug("SNMPAPI.__init__: xdev = %s" % (xdev))
         if isinstance(xdev, SNMPAPI):
-            import copy
-            self.S = copy.copy(xdev.S)
+            self.engine = xdev.engine
+            self.host = xdev.host
         else:
             SNMPAPI.__add_MIB_path(kwargs.get('mibdirs'))
             SNMPAPI.__add_MIB(kwargs.get('mibs'))
@@ -246,9 +271,9 @@ class SNMPAPI:
             # HACK to accomondate SNMPAPI.config being c9r.jsonpy.Thingy:
             config = SNMPAPI.config
             config = dict(config if isinstance(config, dict) else config.dict())
-            config['DestHost'] = xdev
+            self.host = xdev
             logger.debug('New session: SNMPAPI.config = {0}'.format(config))
-            self.S = netsnmp.Session(**config)
+            self.engine = SnmpEngine()
         self.mib = {}
 
 if __name__ == '__main__':
