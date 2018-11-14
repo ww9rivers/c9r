@@ -1,0 +1,129 @@
+{
+"Note":
+[
+	"The first criterium in search2 and search4 may need to be changed",
+	"to make sure all the test cases work properly. This particular search",
+	"expression needs to filter out one and only one message in the inbox.",
+
+		"NOT HEADER Subject \"Gifts of Art\"",
+		"NOT HEADER Subject \"GIFTS of art\"",
+	""
+],
+
+	"user":		"splunk-admin",
+
+	"imap":
+	{
+		"server":	"email.med.umich.edu",
+		"port":		993
+	},
+	"smtp":
+	{
+	},
+
+	"search":	[ "UNSEEN", "HEADER Subject \"Cron \"" ],
+
+	"search2":
+	[
+		"UNSEEN",
+		"NOT HEADER Subject \"IGHT \"",
+		"HEADER Subject \"UMHS Headlines\""
+	],
+	"search3":
+	[
+		"NOT HEADER Subject \"ight \"",
+		"HEADER Subject \"UMHS Headlines\""
+	],
+	"search4":
+	[
+		"NOT HEADER Subject \"IGHT \"",
+		"HEADER Subject \"UMHS Headlines\""
+	],
+
+	"nosuchmail":
+	[
+		"HEADER Subject \"This mail does not exist\""
+	],
+
+	"lynctest":
+	{
+		"folder":	"MILync",
+		"search":
+		[
+			"SEEN",
+			"NOT HEADER Subject \" TEST\"",
+			"NOT HEADER Subject \":TEST\"",
+			"HEADER From SharePointAdmin@med.umich.edu"
+		],
+		"--search":
+		[
+			"OR (HEADER Subject \"MI:JoinCall:\") (HEADER Subject \"Major Incident Resolved \")",
+			"OR (HEADER From SharePointAdmin@med.umich.edu) (HEADER From @everbridge.net) (HEADER From @den2.everbridge.net)",
+			""
+		]
+	},
+
+	"cron":
+	{
+		"days":		14,
+		"mailbox":	"Archive/cron",
+		"limit":	5,
+		"search":
+		[
+			"HEADER Subject \"Output from cron job \""
+		],
+		"":		"#"
+	},
+
+"ironport-reports":
+{
+	"action":	"Extract",
+	"search":
+	[
+		"HEADER Subject \"Cisco Report: \"",
+		"HEADER From reporting@ironportm1.med.umich.edu",
+		"UNSEEN"
+	],
+	"-search":
+	[
+		"HEADER From reporting@ironportm1.med.umich.edu",
+		" - Removed parts from search - "
+	],
+	"archive":	"Archive/ironport",
+	"path":		"/app/var/exchange",
+	"print-name":	true,
+	"":		" - end of ironport-report - "
+},
+
+	"wired-clients":
+	{
+		"action":	"Delete",
+		"days":		180,
+		"limit":	100,
+		"mailbox":	"wired-clients",
+		"search":
+		[
+			"SEEN",
+			"HEADER Subject \"Report: \"",
+			"OR (HEADER From prime01.mcit.med.umich.edu) (HEADER From prime01.domainName)"
+		],
+		"":		"#"
+	},
+
+"archive-test":
+{
+	"action":	"Extract",
+	"search":
+	[
+		"HEADER Subject \"Testing box creation and archive\"",
+		"HEADER From weiwang@med.umich.edu"
+	],
+	"archive":	"Archive/weiwang",
+	"path":		"/tmp",
+	"print-name":	true,
+	"":		" - end of archive-test - "
+},
+
+
+	"":	"-- End -- "
+}

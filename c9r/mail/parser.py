@@ -9,7 +9,8 @@ import re
 from io import StringIO
 from base64 import b64decode
 from email.header import decode_header
-import email, email.parser
+from email.parser import Parser as StrParser
+from email.parser import BytesParser
 from email.utils import mktime_tz, parseaddr, parsedate_tz
 from c9r.pylog import logger
 
@@ -86,12 +87,12 @@ def parse_header(item, msgobj):
     item_fragments = []
     for s, enc in decodefrag:
         if enc:
-            s = unicode(s, enc).encode('utf8','replace')
+            s = str(s, enc).encode('utf8','replace')
         item_fragments.append(s)
     return ''.join(item_fragments)
 
 
-class Parser(email.parser.Parser):
+class Parser(object):
 
     def __call__(self, content):
         '''Parse an email message in "content", which is a string or a text input object.
@@ -100,11 +101,14 @@ class Parser(email.parser.Parser):
 
         Returns parsed message in a dict of (subject, date, body, html, from, to, attachments).
         '''
-        msgobj = self.parse(StringIO(content) if isinstance(content, str) else content)
+        if isinstance(content, bytes):
+            msgobj = BytesParser().parsebytes(content)
+        else:
+            msgobj = StrParser().parse(StringIO(content))
         subject = parse_header('Subject', msgobj)
         date = parse_header('Date', msgobj)
         received = []
-        for part in msgobj.get_all('Received'):
+        for part in (msgobj.get_all('Received') or []):
             lx = self.re_received.split(part)
             tmp = dict(zip(lx[1::2], [ x.strip() for x in lx[2::2] ]))
             tx = tmp.get(';')
@@ -125,17 +129,17 @@ class Parser(email.parser.Parser):
             else: # parse text content
                 content_type = part.get_content_type()
                 if content_type[0:5] == 'text/':
-                    payload = unicode(part.get_payload(decode=True),
-                                      part.get_content_charset() or 'ascii',
-                                      'replace').encode('utf8','replace')
+                    payload = str(part.get_payload(decode=True),
+                                  part.get_content_charset() or 'ascii',
+                                  'replace').encode('utf8','replace')
                 if content_type == "text/plain":
                     if body is None:
                         body = ''
-                    body += payload
+                    body += str(payload)
                 elif content_type == "text/html":
                     if html is None:
                         html = ''
-                    html += payload
+                    html += str(payload)
                 else:
                     logger.debug('Ignored: Content_type "{0}" in message "{1}" from {2}, Date={3}'.format(content_type, subject, fromaddr, date))
         return {
@@ -153,9 +157,7 @@ class Parser(email.parser.Parser):
             }
 
     def __init__(self):
-        email.parser.Parser.__init__(self)
         self.re_received = re.compile('(from|by|via|with|id|for|;)')
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testfile('test/parser.text')
+    Print('Unit test is done with pytest.')
