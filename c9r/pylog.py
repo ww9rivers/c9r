@@ -49,7 +49,7 @@ def config(conf=None, defaults=None, disable_existing_loggers=True):
     try:
         logging.config.fileConfig(fname, defaults, disable_existing_loggers)
         PYLOG = dict(config=fname, name=name)
-    except KeyError as err:
+    except Exception as err:
         pass
     logger = get_logger(name)
     logger.propagate = False
