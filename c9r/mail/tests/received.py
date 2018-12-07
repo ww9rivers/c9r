@@ -1,7 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from StringIO import StringIO
-from email.Header import decode_header
+from io import StringIO
+from email.header import decode_header
 from pprint import pprint
 from c9r.app import Command
 from c9r.jsonpy import Thingy

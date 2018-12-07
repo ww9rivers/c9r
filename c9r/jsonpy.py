@@ -1,7 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ##
-## $Id: jsonpy.py,v 1.6 2015/10/28 21:37:04 weiwang Exp $
-##
+
 """
 | This file is part of the c9r package
 | Copyrighted by Wei Wang <ww@9rivers.com>
@@ -14,6 +13,7 @@ Contains classes:
 """
 
 import json
+import collections
 
 
 class Null(object):
@@ -33,10 +33,10 @@ class Null(object):
         return self.__dict__.items()
 
     def iteritems(self):
-        return self.__dict__.iteritems()
+        return iter(self.__dict__.items())
 
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
     def update(self, data):
         '''Update this object with attribute/value pairs given in a dict.'''
@@ -77,9 +77,9 @@ class Thingy(Null):
     @param defval       Optional default values, that is fed to dict() for initializing this object.
     '''
     def __init__(self, dconf=None, defval=None):
-        if isinstance(dconf, basestring):
+        if isinstance(dconf, str):
             newconf = load_file(dconf, defval)
-        elif hasattr(dconf, 'read') and callable(dconf.read):
+        elif hasattr(dconf, 'read') and isinstance(dconf.read, collections.Callable):
             newconf = load(dconf, defval)
         elif isinstance(dconf, Null):
             newconf = dconf.dict()
@@ -89,10 +89,8 @@ class Thingy(Null):
             newconf = dict(defval)
         else:
             newconf = dict()
-        for xk, xv in newconf.iteritems():
-            if isinstance(xv, unicode):
-                xv = xv.encode('utf-8')
-            elif isinstance(xv, dict):
+        for xk, xv in newconf.items():
+            if isinstance(xv, dict):
                 xv = Thingy(xv)
             newconf[xk] = xv
         self.__dict__.update(newconf)
@@ -123,12 +121,8 @@ def _decode_dict(data):
     if isinstance(data, list):
         return _decode_list(data)
     rv = {}
-    for key, value in data.iteritems():
-        if isinstance(key, unicode):
-           key = key.encode('utf-8')
-        if isinstance(value, unicode):
-           value = value.encode('utf-8')
-        elif isinstance(value, list):
+    for key, value in data.items():
+        if isinstance(value, list):
            value = _decode_list(value)
         elif isinstance(value, dict):
            value = _decode_dict(value)
@@ -138,9 +132,7 @@ def _decode_dict(data):
 def _decode_list(data):
     rv = []
     for item in data:
-        if isinstance(item, unicode):
-            item = item.encode('utf-8')
-        elif isinstance(item, list):
+        if isinstance(item, list):
             item = _decode_list(item)
         elif isinstance(item, dict):
             item = _decode_dict(item)

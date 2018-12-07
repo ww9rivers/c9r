@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# $Id: app.py,v 1.13 2016/06/06 18:15:15 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
@@ -126,9 +125,9 @@ class Command(object):
         global logger
         try:
             opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or self.short_opt, long_opts or self.long_opt)
-        except getopt.GetoptError, err:
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             self.usage()
             sys.exit(1)
 
@@ -136,7 +135,7 @@ class Command(object):
             Command.CONF = Thingy(self.defaults)
         self.args = args
         conffile = self.def_conf
-        if isinstance(conffile, basestring):
+        if isinstance(conffile, str):
             conffile = list([conffile])
         elif not isinstance(conffile, list):
             conffile = list([])

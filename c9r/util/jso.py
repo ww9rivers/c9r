@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-##
-## $Id: jso.py,v 1.4 2015/06/01 13:40:07 weiwang Exp $
-##
+#!/usr/bin/env python3
+
 """
 | This file is part of the c9r package
 | Copyrighted by Wei Wang <ww@9rivers.com>
@@ -25,18 +23,18 @@ class Storage(dict):
     Example::
 
         >>> o = Storage(a=1)
-        >>> print o.a
+        >>> print(o.a)
         1
 
         >>> o['a']
         1
 
         >>> o.a = 2
-        >>> print o['a']
+        >>> print(o['a'])
         2
 
         >>> del o.a
-        >>> print o.a
+        >>> print(o.a)
         None
     """
     __slots__ = ()
@@ -133,7 +131,7 @@ def load_storage(read_fro):
     '''
     fp = None
     try:
-        fp = open(read_fro, 'r') if isinstance(read_fro, basestring) else read_fro
+        fp = open(read_fro, 'r') if isinstance(read_fro, str) else read_fro
         storage = json.load(fp)
     finally:
         if fp and fp != read_fro:
@@ -150,7 +148,7 @@ def save_storage(storage, save_to, indent=None):
     '''
     fp = None
     try:
-        fp = open(save_to, 'wb') if isinstance(save_to, basestring) else save_to
+        fp = open(save_to, 'wb') if isinstance(save_to, str) else save_to
         json.dump(storage, fp, indent=indent)
     finally:
         if fp and fp != save_to:

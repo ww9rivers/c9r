@@ -3,6 +3,10 @@
 \#*
 .*~
 *.egg-info
+.eggs/
+c9r/cisco
+c9r/inventory
+c9r/monitor
 tests/*.db
 tests/*.log
 build/

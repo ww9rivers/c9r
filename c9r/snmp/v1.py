@@ -68,7 +68,7 @@ class SNMPAPI:
         return self.get_object(xoid, "STRING")
 
     def set(self, xoid, xtype, xvalue):
-	"""
+        """
         Set an SNMP object in this device.
         """
         vars = netsnmp.VarList(netsnmp.Varbind(xoid, None, xvalue, xtype))

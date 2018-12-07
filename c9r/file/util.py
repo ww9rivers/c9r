@@ -26,7 +26,7 @@ def compare(ftime, timespec):
     10 minutes, etc. Valid units are s, m, h, d, w, mo, yr, for second,
     minute, hour, day, month and year. --- This is to be implemented later.
     '''
-    if isinstance(timespec, basestring):
+    if isinstance(timespec, str):
         mx = timespec_re.match(timespec)
         if mx is None:
             raise ValueError('Invalid time spec')
@@ -57,7 +57,7 @@ def modified_before(path, timespec):
     fst = os.stat(path)
     return compare(fst.st_mtime, timespec) < 0
 
-def forge_path(path, mode=0700):
+def forge_path(path, mode=0o700):
     '''Change current directory to the given path if possible; Otherwise,
     create folders along the path to get there.
 

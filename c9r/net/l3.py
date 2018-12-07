@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 $Id: l3.py,v 1.6 2016/03/28 15:07:15 weiwang Exp $
 

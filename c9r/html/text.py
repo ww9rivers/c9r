@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # $Id: text.py,v 1.4 2016/03/28 15:07:15 weiwang Exp $
@@ -12,8 +12,8 @@ Copyright (c) 2012,2013 9Rivers.net. All rights reserved.
 #  -- Reference: http://docs.python.org/2/library/htmlparser.html
 '''
 
-from HTMLParser import HTMLParser
-from htmlentitydefs import name2codepoint
+from html.parser import HTMLParser
+from html.entities import name2codepoint
 from c9r.pylog import logger
 
 
@@ -25,11 +25,11 @@ class Parser(HTMLParser):
         '''Add a character to the text. Convert &nbsp; to regular space for text.'''
         if c == 160:
             c = 32
-        self.add_text(unichr(c) if c < 128 else ('&#%d;'%(c)))
+        self.add_text(chr(c) if c < 128 else ('&#%d;'%(c)))
 
     def add_text(self, text):
         if self.bodymode:
-            self.segments.append(text if isinstance(text, unicode) else text.decode('utf-8'))
+            self.segments.append(text if isinstance(text, str) else text.decode('utf-8'))
 
     def reset(self):
         HTMLParser.reset(self)
@@ -78,7 +78,7 @@ class Parser(HTMLParser):
         for txt in self.segments:
             lineno += 1
             logger.debug("%d: %s"%(lineno, txt))
-        return ''.join([sx.encode('utf-8', 'xmlcharrefreplace') for sx in self.segments])
+        return ''.join([str(sx.encode('utf-8', 'xmlcharrefreplace'), 'utf-8') for sx in self.segments])
 
     def __repr__(self):
         return self.text()
@@ -86,7 +86,7 @@ class Parser(HTMLParser):
     def __init__(self, init=None):
         '''Initialize the parser with optional initial value.
         '''
-        HTMLParser.__init__(self)
+        HTMLParser.__init__(self, convert_charrefs=False)
         if init: self.add_data(init)
 
 if __name__ == '__main__':

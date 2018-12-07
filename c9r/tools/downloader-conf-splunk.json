@@ -1,7 +1,9 @@
 {"": [ "$Id$",
 
 	"Configuration for downloader.py to download Splunk Enterprise packages.",
-	""
+	"wget -O splunk-7.0.1-2b5b15c4ee89-Linux-x86_64.tgz 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.0.1&product=splunk&filename=splunk-7.0.1-2b5b15c4ee89-Linux-x86_64.tgz&wget=true'",
+	"wget -O splunkforwarder-7.0.1-2b5b15c4ee89-AIX-powerpc.tgz 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=PPC&platform=aix&version=7.0.1&product=universalforwarder&filename=splunkforwarder-7.0.1-2b5b15c4ee89-AIX-powerpc.tgz&wget=true'",
+	"wget -O splunk-7.0.1-2b5b15c4ee89-x64-release.msi 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=windows&version=7.0.1&product=splunk&filename=splunk-7.0.1-2b5b15c4ee89-x64-release.msi&wget=true'"
 ],
 
 "base_url":		"https://www.splunk.com",

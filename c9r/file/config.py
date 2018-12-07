@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 #       $Id: config.py,v 1.7 2015/12/04 14:55:28 weiwang Exp $
 '''
@@ -9,7 +9,7 @@ This program is licensed under the GPL v3.0, which is found at the URL below:
 import os
 import os.path
 from base64 import b64decode, b64encode
-from c9r.util import jso, python
+from c9r.util import jso
 from c9r.pylog import logger
 
 
@@ -103,7 +103,7 @@ class Config(object):
         self.loaded = list()
         for xf in self.def_conf+conf:
             try:
-                if python.is_string(xf):
+                if isinstance(xf, str):
                     self.load(xf)
                 else:
                     self.update(xf)
@@ -114,7 +114,7 @@ class Config(object):
                 logger.debug('Exception {0} loading config {1}'.format(ex, xf))
         for xf in to_include:
             self.include(xf)
-        self.save_to = xf if python.is_string(xf) else None
+        self.save_to = xf if isinstance(xf, str) else None
         self.update(update)
 
 
@@ -132,7 +132,7 @@ class TextPassword(object):
         if not value is self.value:
             logger.debug('Assigning value: {0}'.format(value))
             self.value = value
-        return clear
+        return clear.decode("utf-8")
     def cleartext(self):
         return self.assign(self.value)
     def __init__(self, val, is_clear=None):

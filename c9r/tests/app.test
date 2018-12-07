@@ -25,7 +25,7 @@ Test 1: Logger
 Test 2: app.config()
 
     >>> app.config()
-    <class 'c9r.jsonpy.Thingy'>({'true': True, 'key': 'value'})
+    <class 'c9r.jsonpy.Thingy'>({'key': 'value', 'true': True})
     >>> app.config('true')
     True
     >>> app.config('key')

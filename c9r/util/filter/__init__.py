@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # $Id: __init__.py,v 1.10 2015/04/01 19:57:17 weiwang Exp $
 #
