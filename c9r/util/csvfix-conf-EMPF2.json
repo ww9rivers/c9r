@@ -18,7 +18,7 @@
 		"ap-inventory":
 		{
 			"disabled":	false,
-			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.csv",
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.zip",
 			"destination":	"/app/var/pi/inventory/ap",
 			"delete":	true,
 			"skip-pass":	"^AP Inventory\\s*$",
