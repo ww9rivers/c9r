@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 #
 # $Id: csvfix.py,v 1.30 2016/06/06 15:36:22 weiwang Exp $
 """
@@ -319,9 +319,9 @@ class Pipeline(object):
                 except Exception as ex:
                     logger.warn('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
                     logger.debug('\tline = {0})'.format(line))
-                    print '-'*60
+                    print('-'*60)
                     traceback.print_exc(file=sys.stdout)
-                    print '-'*60
+                    print('-'*60)
                     #logger.debug(traceback.format_tb(sys.exc_info()))
             if True:
                 logger.debug('Closing filter 1: {0}, lines = {1}, fout size = {2}'.format(type(filter1).__name__, lineno, fout.tell()))
