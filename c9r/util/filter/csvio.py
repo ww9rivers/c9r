@@ -21,6 +21,7 @@ class Reader(object):
         else:
             self.read = True
         line = self.line
+        line = line.decode('utf-8') if isinstance(line, bytes) else line
         if self.ends and self.ends.match(line):
             logger.debug('Ends proessing at: {0})'.format(line))
             raise StopIteration
