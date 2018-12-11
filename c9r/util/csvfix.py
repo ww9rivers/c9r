@@ -276,8 +276,9 @@ class Pipeline(object):
         logger.debug('{0}: {1}to output CSV header: {2}'.format(fnw, '' if write_header else 'not ', header))
         if self.read_header or header is None:
             try:
-                rheader = [ self.header_clean.sub('', x) for x in fin.next().split(',') ]
+                rheader = [ self.header_clean.sub('', x) for x in next(fin).split(',') ]
             except Exception as ex:
+                logger.debug('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
                 logger.warn('Unexpected error when reading CSV header in {0}:{1}'.format(fnr, lineno))
                 return 0
             lineno += 1
