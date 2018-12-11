@@ -255,6 +255,8 @@ class Pipeline(object):
         while skip['more']:
             try:
                 line = next(fin)
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8')
             except StopIteration:
                 logger.warn('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
                 return 0
