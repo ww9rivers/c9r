@@ -156,7 +156,7 @@ class CSVFixer(Command):
         '''
         os.chdir(self.config('path', '.'))
         tasks = self.config('tasks', {})
-        for pat,cfg in tasks.iteritems():
+        for pat,cfg in tasks.items():
             jobqu.put((cfg, pat))
         tasks = min(self.config('threads', 10), jobqu.qsize())
         cwd = os.getcwd()
@@ -205,8 +205,8 @@ class InvalidInputFormat(Exception):
 class JSOReader(object):
     '''Read from the given in_file and parse each line into a dict as in JSON object.
     '''
-    def next(self):
-        jsobj = json.loads(self.in_file.next())
+    def __next__(self):
+        jsobj = json.loads(next(self.in_file))
         logger.debug(str(jsobj))
         return jsobj
 
@@ -245,8 +245,8 @@ class Pipeline(object):
         Returns number of rows (records) processed in the CSV file.
         '''
         # Open files if they are given as file names:
-        fin = csvio.Reader(open(fnr, 'rU') if isinstance(fnr, basestring) else fnr, self.ends)
-        fout = open(fnw, self.file_mode) if isinstance(fnw, basestring) else fnw
+        fin = csvio.Reader(open(fnr, 'rU') if isinstance(fnr, str) else fnr, self.ends)
+        fout = open(fnw, self.file_mode) if isinstance(fnw, str) else fnw
         write_header = self.write_header and (fout.tell() == 0)
         # Skip non-data if so configured:
         skip = dict({'line': 0, 'pass': 0, 'till': 0})
@@ -254,7 +254,7 @@ class Pipeline(object):
         lineno = 0
         while skip['more']:
             try:
-                line = fin.next()
+                line = next(fin)
             except StopIteration:
                 logger.warn('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
                 return 0
@@ -311,7 +311,7 @@ class Pipeline(object):
             csvreader = self.ireader(fin, fieldnames=(rheader or header))
             while True:
                 try:
-                    line = csvreader.next()
+                    line = next(csvreader)
                     lineno += 1
                     filter1.write(line)
                 except StopIteration:
@@ -349,13 +349,13 @@ class Pipeline(object):
             skipping = config.get('skip-'+sk, 0) # 0 also means False
             if skipping:
                 skip['more'] = True
-                skip[sk] = re.compile(skipping) if isinstance(skipping, basestring) else skipping
+                skip[sk] = re.compile(skipping) if isinstance(skipping, str) else skipping
         self.skip = skip
         self.filters = config.get('filters', [])
         self.header = config.get('header', None)
         self.header_clean = re.compile(config.get('header-clean', '\W+'))
         self.header_fix = [ (re.compile(xk),xv) for xk,xv
-                            in config.get('header-fix', {}).iteritems() ]
+                            in config.get('header-fix', {}).items() ]
         self.read_header = config.get('read-header', False)
         self.write_header = config.get('write-header', False)
         self.file_mode = config.get("file-mode", 'w')
@@ -419,7 +419,7 @@ def task(cwd):
         forge_path(dest)
         process = Pipeline(config)
         keep_times = config.get('times', False)
-        rename = [ (re.compile(xk),xv) for xk,xv in config.get('rename', {}).iteritems() ]
+        rename = [ (re.compile(xk),xv) for xk,xv in config.get('rename', {}).items() ]
         logger.debug('CSVFixer: task = %s, destination = "%s"' % (pattern, dest))
         for zipfn in glob.glob(pattern):
             stinfo = os.stat(zipfn)

@@ -1,14 +1,11 @@
-#! /usr/bin/env python
-#
-# $Id: CiscoPI.py,v 1.9 2015/12/04 14:27:14 weiwang Exp $
-#
+#! /usr/bin/env python3
 
 import re
 from time import strftime, strptime
 from c9r.net.mac import MACFormat
 from c9r.util.filter import Filter
 from c9r.pylog import logger
-from cisco.cli.port import nickname
+from c9r.cisco.cli.port import nickname
 
 pi_timeformat = '%a %b %d %H:%M:%S %Z %Y'
 sql_timeformat = "%b %d %Y %I:%M:%S%p"

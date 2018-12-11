@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 from c9r.util.filter import Filter
 
@@ -11,7 +11,7 @@ class Trim(Filter):
 
         /data/ is expected to be a dictionary-type object, with.
         '''
-        for xk,xv in data.iteritems():
+        for xk,xv in data.items():
             data[xk] = xv.strip()
         return Filter.write(self, data)
 

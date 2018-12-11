@@ -1,7 +1,4 @@
-#! /usr/bin/env python
-#
-# $Id: CiscoInventory.py,v 1.4 2015/12/09 21:21:58 weiwang Exp $
-#
+#! /usr/bin/env python3
 
 import re
 from time import strftime, strptime
@@ -46,10 +43,10 @@ class AP(Filter):
         try:
             val['macAddress'] = MACFormat.none(data["EthernetMAC"])
             val.update(parse_apname(data["APName"]))
-            for kd, ks in self.map.iteritems():
+            for kd, ks in self.map.items():
                 val[kd] = data[ks]
-        except InvalidMACAddress:
-            logger.error('Invalid MAC address for data: {0}'.format(data))
+        except Exception as err:
+            logger.error('Invalid MAC address: {0} - {1}'.format(data["EthernetMAC"], err))
         data.update(val)
         return Filter.write(self, data)
 
@@ -113,5 +110,5 @@ if __name__ == '__main__':
     from c9r import app
     class TestApp(app.Command):
         def __call__(self):
-            doctest.testfile('test/CiscoInventory.test')
+            doctest.testfile('tests/CiscoInventory.test')
     TestApp()()
