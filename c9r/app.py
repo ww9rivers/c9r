@@ -93,7 +93,7 @@ class Command(object):
         logger.info(msg)
 
     def log_warn(self, msg):
-        logger.warn(msg)
+        logger.warning(msg)
 
     def usage(self, params=None):
         """
@@ -119,12 +119,12 @@ class Command(object):
     def __call__(self):
         assert False, "Application module needs to define __call__()."
 
-    def __init__(self, short_opts=0, long_opts=0):
+    def __init__(self, short_opts=0, long_opts=0, short_extra='', long_extra=[]):
         '''
         '''
         global logger
         try:
-            opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or self.short_opt, long_opts or self.long_opt)
+            opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or (self.short_opt+short_extra), long_opts or (self.long_opt+long_extra))
         except getopt.GetoptError as err:
             # print help information and exit:
             print(str(err)) # will print something like "option -a not recognized"
