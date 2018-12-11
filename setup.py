@@ -47,6 +47,7 @@ setup(name='c9r',
       #
       # Ref.: http://python-packaging.readthedocs.io/en/latest/testing.html
       #
-      test_suite='nose.collector',
-      tests_require=['nose'],
+      #test_suite='pytest',
+      tests_require=['pytest'],
+      setup_requires=['pytest-runner'],
       zip_safe=False)
