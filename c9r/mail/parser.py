@@ -5,8 +5,7 @@
 ## Reference: http://www.ianlewis.org/en/parsing-email-attachments-python
 ##
 
-import re
-from io import StringIO
+import io, re
 from base64 import b64decode
 from email.header import decode_header
 from email.parser import Parser as StrParser
@@ -34,7 +33,7 @@ def parse_attachment(message_part):
         dispositions = content_disposition.strip().split(";")
         if bool(content_disposition and dispositions[0].lower() == "attachment"):
             file_data = message_part.get_payload(decode=True)
-            attachment = StringIO(file_data.decode('utf-8') if isinstance(file_data, bytes) else file_data)
+            attachment = io.BytesIO(file_data.encode() if isinstance(file_data, str) else file_data)
             attachment.content_type = message_part.get_content_type()
             attachment.size = len(file_data)
             attachment.name = message_part.get_filename()
