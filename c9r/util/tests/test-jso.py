@@ -12,6 +12,8 @@ def test_1():
     assert o['a'] == 2
     del o.a
     assert o.a == None
+    o['a'] = 3
+    assert o['a'] == 3
 
 def test_2_getlist():
     request = Storage()
