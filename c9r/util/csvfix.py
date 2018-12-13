@@ -245,7 +245,7 @@ class Pipeline(object):
         Returns number of rows (records) processed in the CSV file.
         '''
         # Open files if they are given as file names:
-        fin = csvio.Reader(open(fnr, 'rU') if isinstance(fnr, str) else fnr, self.ends)
+        fin = csvio.Reader(open(fnr, 'r') if isinstance(fnr, str) else fnr, self.ends)
         fout = open(fnw, self.file_mode) if isinstance(fnw, str) else fnw
         write_header = self.write_header and (fout.tell() == 0)
         # Skip non-data if so configured:
@@ -258,7 +258,7 @@ class Pipeline(object):
                 if isinstance(line, bytes):
                     line = line.decode('utf-8')
             except StopIteration:
-                logger.warn('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
+                logger.warning('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
                 return 0
             if skip['till'] and skip['till'].match(line):
                 logger.debug('Skip-till matching line {0}: {1}'.format(lineno+1, line))
@@ -279,7 +279,7 @@ class Pipeline(object):
                 rheader = [ self.header_clean.sub('', x) for x in next(fin).split(',') ]
             except Exception as ex:
                 logger.debug('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
-                logger.warn('Unexpected error when reading CSV header in {0}:{1}'.format(fnr, lineno))
+                logger.warning('Unexpected error when reading CSV header in {0}:{1}'.format(fnr, lineno))
                 return 0
             lineno += 1
             logger.debug('Read header: {0}'.format(rheader))
@@ -291,7 +291,7 @@ class Pipeline(object):
                         try:
                             col = fmt.format(*mx.groups())
                         except Exception as ex:
-                            logger.warn('Exception fixing "{0}" with "{1}" and groups = {2}'.format(col, fmt, mx.groups()))
+                            logger.warning('Exception fixing "{0}" with "{1}" and groups = {2}'.format(col, fmt, mx.groups()))
                     nhdr.append(col)
                 rheader = nhdr
             logger.debug('Header fixed: {0}'.format(rheader))
@@ -309,7 +309,7 @@ class Pipeline(object):
                     klass = getattr(mod, cname)
                     filter1 = klass(filter1).open()
             except ImportError:
-                logger.warn('ImportError for filter {0}'.format(fltr))
+                logger.warning('ImportError for filter {0}'.format(fltr))
                 raise
             csvreader = self.ireader(fin, fieldnames=(rheader or header))
             while True:
@@ -320,7 +320,7 @@ class Pipeline(object):
                 except StopIteration:
                     break
                 except Exception as ex:
-                    logger.warn('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
+                    logger.warning('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
                     logger.debug('\tline = {0})'.format(line))
                     print('-'*60)
                     traceback.print_exc(file=sys.stdout)
@@ -356,7 +356,7 @@ class Pipeline(object):
         self.skip = skip
         self.filters = config.get('filters', [])
         self.header = config.get('header', None)
-        self.header_clean = re.compile(config.get('header-clean', '\W+'))
+        self.header_clean = re.compile(config.get('header-clean', r'\W+'))
         self.header_fix = [ (re.compile(xk),xv) for xk,xv
                             in config.get('header-fix', {}).items() ]
         self.read_header = config.get('read-header', False)
@@ -381,7 +381,7 @@ def atexit_delete(filename):
     try:
         os.unlink(filename)
     except Exception as ex:
-        logger.warn('CSVFixer: Exception "{0}" deleting file "{1}".'.format(ex, filename))
+        logger.warning('CSVFixer: Exception "{0}" deleting file "{1}".'.format(ex, filename))
 
 def atexit_process(filename, act):
     '''Post process a file with given /act/.
@@ -438,7 +438,7 @@ def task(cwd):
                     ziplist = zipf.namelist()
                     logger.debug('CSVFixer: Found list in zip file = %s' % (format(ziplist)))
                 except BadZipfile:
-                    logger.warn('CSVFixer: zip file "%s" is bad.' % (zipfn))
+                    logger.warning('CSVFixer: zip file "%s" is bad.' % (zipfn))
                     continue
             fwpath = ''
             for fn in ziplist:
@@ -450,7 +450,7 @@ def task(cwd):
                             try:
                                 fwname = fmt.format(*mx.groups())
                             except Exception as ex:
-                                logger.warn('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
+                                logger.warning('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
                             break
                     fwpath = os.path.join(dest, os.path.basename(fwname))
                 logger.debug('Processing file "{0}" to "{1}"'.format(fn, fwname))

@@ -12,6 +12,7 @@ tests/*.log
 build/
 CVS/
 dist/
+__pycache__/
 zips/
 subject.db
 .idea

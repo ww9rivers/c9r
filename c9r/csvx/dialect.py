@@ -10,6 +10,9 @@ Copyright (c) 2013 9Rivers.com. All rights reserved.
 import csv
 import re
 
+class UnnamedDialect(csv.Error):
+    def __init__(self):
+        super().__init__("Unnamed CSV dialect")
 
 class Annotated(csv.Dialect):
     '''A self-registering Python CSV dialect.
@@ -20,13 +23,13 @@ class Annotated(csv.Dialect):
     signature = None
     comment = ';'
     markers = {
-        'header':  re.compile('HEADER:\s*(?P<section_header>\S+)'),
-        'section': re.compile('Start of section (?P<section_number>\d+) - (?P<section_name>\S+.*\S+)')
+        'header':  re.compile(r'HEADER:\s*(?P<section_header>\S+)'),
+        'section': re.compile(r'Start of section (?P<section_number>\d+) - (?P<section_name>\S+.*\S+)')
         }
 
     def __init__(self, **fmtparams):
         if self.name is None:
-            raise Error("Unnamed CSV dialect")
+            raise UnnamedDialect
         csv.register_dialect(self.name, **fmtparams)
 
 

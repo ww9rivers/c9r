@@ -60,7 +60,7 @@ class Normalizer(Filter):
                 data[xk] = ''
         try:
             it = self.retime.findall(data['LastSessionLength'])
-        except TypeError:
+        except Exception:
             it = []
         sec = 0
         for x in it:

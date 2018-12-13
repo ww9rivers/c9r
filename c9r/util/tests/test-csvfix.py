@@ -8,9 +8,8 @@ from c9r.pylog import logger
 from c9r.util.filter import Filter
 from c9r.util.filter.tests.Ofilter import Ofilter
 from c9r.util.csvfix import CSVFixer, Pipeline, InvalidInputFormat
+import traceback
 
-filtered = 0
-xout = Ofilter()
 
 class NullFilter(object):
     '''
@@ -24,6 +23,10 @@ class NullFilter(object):
         global filtered
         logger.debug(data.strip())
         filtered += 1
+
+filtered = 0
+null = NullFilter()
+xout = Ofilter()
 
 def test_1():
     with Filter(xout) as ff:
@@ -40,7 +43,6 @@ def test_2():
         #'skip-till': '^Last Seen,',
         "filters":   [ "CiscoPI.Normalizer" ]
     })
-    null = NullFilter()
     pl('zips/usertracking_20150331_140015_629.csv', null)
     assert filtered > 0
 
@@ -71,20 +73,34 @@ def test_3():
 """
 Test 4: Test "input-format" configuration
 """
-def test_4():
+def test_4_1():
     try:
         p3 = Pipeline({ 'input-format': 'invalid' })
         assert False
     except InvalidInputFormat:
         assert True
 
+def test_4_2():
     jsodata = io.StringIO('{"a": 123}\n{"a": 45}')
     xout.re_init()
     try:
-        p4 = Pipeline({ 'input-format': 'json', 'header': [ 'a' ], 'dialect': 'nix' })
+        p4 = Pipeline({
+            'input-format': 'json',
+            'header': [ 'a' ],
+            'dialect': 'nix',
+            "dialects":
+	    {
+		"nix":
+		{
+		    "quoting":		"QUOTE_ALL",
+		    "lineterminator":	"\n"
+		}
+	    }
+        })
         p4(jsodata, xout)
-    except InvalidInputFormat:
-        'Failed!'
+    except Exception as ex:
+        logger.warning('{1}: {0} ({2})'.format(ex, type(ex).__name__, p4.dialect))
+        assert False
         # Expecting 3 lines: 123 / 45 / 2 (number of lines)
     assert xout.readlines() == [''.join(["123", "45", 2])]
 
