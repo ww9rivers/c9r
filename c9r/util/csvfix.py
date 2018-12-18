@@ -63,6 +63,8 @@ class CSVFixer(Command):
       header-clean  Regex for removing special characters. Defaults to '\\W+'.
       header-fix    Optional dict used to fix the header.
       input-format  Format of input data: "csv" or "json". Defaults to "csv".
+      link-folder   A folder for the "destination", in case files are removed there,
+                    for example, by MiShare after files are transported.
       pattern       Optional filename template - This overwrites the pattern in the
                     task key.
       read-header   True, if CSV column header is to be read from first line in data.
@@ -419,6 +421,7 @@ def task(cwd):
             continue
         pattern = config.get('pattern', pattern) # 'pattern' may be configured inside task
         dest = config.get('destination', cwd)
+        linkfolder = config.get('link-folder')
         forge_path(dest)
         process = Pipeline(config)
         keep_times = config.get('times', False)
@@ -440,7 +443,7 @@ def task(cwd):
                 except BadZipfile:
                     logger.warning('CSVFixer: zip file "%s" is bad.' % (zipfn))
                     continue
-            fwpath = ''
+            fbasename = fwpath = ''
             for fn in ziplist:
                 if fwpath == '' or config.get('file-mode') != 'a':
                     fwname = fn
@@ -452,7 +455,8 @@ def task(cwd):
                             except Exception as ex:
                                 logger.warning('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
                             break
-                    fwpath = os.path.join(dest, os.path.basename(fwname))
+                    fbasename = os.path.basename(fwname)
+                    fwpath = os.path.join(dest, fbasename)
                 logger.debug('Processing file "{0}" to "{1}"'.format(fn, fwname))
                 lines = process(open(fn, 'r') if zipf is None else zipf.open(fn, 'r'), fwpath)
                 logger.debug('{0} lines processed in file "{1}"'.format(lines, fn))
@@ -474,6 +478,11 @@ def task(cwd):
             if fwpath != '' and config.get('delete-empty', True) and os.stat(fwpath).st_size < 1:
                 os.unlink(fwpath)
                 logger.debug('Deleted empty output file "{0}"'.format(fwpath))
+            elif linkfolder:
+                try:
+                    os.link(fwpath, os.path.join(linkfolder, fbasename))
+                except Exception as err:
+                    logger.error('Error link file "{0}" to folder {1}: {2}'.format(fwpath, linkfolder, err))
         jobqu.task_done()
         logger.debug('Task "{0}" completed'.format(pattern))
 

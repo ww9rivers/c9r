@@ -1,5 +1,5 @@
 {
-"Version":	"$Id: csvfix-conf-EMPF2.json,v 1.2 2016/02/23 21:03:27 weiwang Exp $",
+"Version":	"$Id: csvfix-conf.json,v 1.15 2015/12/04 14:49:43 weiwang Exp $",
 "":
 [	"Run 'csvfix.py -h' for configuration details.",
 
@@ -21,7 +21,7 @@
 			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.zip",
 			"destination":	"/app/var/pi/inventory/ap",
 			"link-folder":	"/app/var/splunk/ap",
-			"delete":	true,
+			"delete":	false,
 			"skip-pass":	"^AP Inventory\\s*$",
 			"end-at":	"^Disassociated AP\\(s\\)",
 			"read-header":	true,
@@ -55,40 +55,12 @@
 			"filters":	[ "CiscoInventory.AP" ],
 			"write-header":	true
 		},
-
-		"cpca-reports":
-		{
-			"disabled":	false,
-			"delete":	true,
-			"pattern":	"/app/var/cpca/*_????????_??????_???.csv",
-			"filters":	[ "Trim.Trim" ],
-			"destination":	"/app/var/cpca",
-			"skip-line":	1,
-			"times":	true,
-			"read-header":	true,
-			"write-header":	true,
-			"rename":	{ "([\\w_]+_\\d{8}).+": "{0}.csv" },
-			"":		"#"
-		},
-
-		"rogue_aps":
-		{
-			"disabled":	false,
-			"pattern":	"/app/var/pi/reports/rogue_aps/Rogue_AP_report_for_Splunk_*.csv",
-			"destination":	"/app/var/pi/reports/rogue_aps",
-			"postprocess":	"xz",
-			"skip-till":	"^Last Seen Time,",
-			"rename":	{ "Rogue_AP_report_for_Splunk_(\\d+)_.*": "RogueAPs-{0}.csv" },
-			"file-mode":	"a",
-			"read-header":	true,
-			"write-header":	true
-		},
 		
 		"":	"V2 tasks ------------------------------------------------------------",
-		"Unique_clients_for_Splunk*.*[pv]":
+		"Unique_clients_for_Splunk*.*":
 		{
-			"disabled":	false,
-			"postprocess":	"xz",
+			"disabled":	true,
+			"delete":	true,
 			"filters":	[ "CiscoPI.Wired" ],
 			"destination":	"/app/var/pi/v2/wired_devices",
 			"skip-till":	"^Last Seen,",
@@ -104,9 +76,9 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk_*.*[pv]":
+		"Unique_clients_for_Splunk_*.*":
 		{
-			"disabled":	false,
+			"disabled":	true,
 			"delete":	false,
 			"filters":	[ "CiscoPI.Wireless" ],
 			"destination":	"/app/var/pi/v2/wireless_devices",
@@ -133,9 +105,9 @@
 		},
 
 		"":	"V2.1 tasks ----------------------------------------------------------",
-		"Unique[_]clients_for_Splunk*.*[pv]":
+		"Unique[_]clients_for_Splunk*.*":
 		{
-			"disabled":	false,
+			"disabled":	true,
 			"delete":	false,
 			"filters":	[ "CiscoPI.WiredSQL" ],
 			"destination":	"/app/var/pi/v2.1/wired_devices",
@@ -152,9 +124,9 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk[_]*.*[pv]":
+		"Unique_clients_for_Splunk[_]*.*":
 		{
-			"disabled":	false,
+			"disabled":	true,
 			"delete":	false,
 			"filters":	[ "CiscoPI.WirelessUMHS" ],
 			"destination":	"/app/var/pi/v2.1/wireless_devices",
@@ -179,9 +151,9 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for[_]Splunk_*.*[pv]":
+		"Unique_clients_for[_]Splunk_*.*":
 		{
-			"disabled":	false,
+			"disabled":	true,
 			"delete":	false,
 			"filters":	[ "CiscoPI.WirelessGuest" ],
 			"destination":	"/app/var/pi/v2.1/wireless_devices",
