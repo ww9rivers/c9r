@@ -17,6 +17,7 @@ class AP(Filter):
         "ipAddress": "APIPAddress",
         "commonName": "APName",
         "termID": "APName",
+        "association": "ControllerName",
         # "model": "Model",
         # "serialNumber": "SerialNumber",
         }
@@ -40,13 +41,23 @@ class AP(Filter):
         /data/ is expected to be a dictionary-type object, with.
         '''
         val = dict(self.assigned_values)
+        emac = apname = None
         try:
-            val['macAddress'] = MACFormat.none(data["EthernetMAC"])
-            val.update(parse_apname(data["APName"]))
+            emac = data.get("EthernetMAC")
+            if not emac:
+                return 0
+            val['macAddress'] = MACFormat.none(emac)
+            rmac = data.get('BaseRadioMAC')
+            if rmac:
+                data['BaseRadioMAC'] = MACFormat.none(rmac)
+            apname = data.get("APName")
+            val.update(parse_apname(apname))
             for kd, ks in self.map.items():
                 val[kd] = data[ks]
         except Exception as err:
-            logger.error('Invalid MAC address: {0} - {1}'.format(data["EthernetMAC"], err))
+            logger.error('Error {0} - MAC:{1}, AP:{2}'.format(err, emac, apname))
+            if not emac:
+                return 0
         data.update(val)
         return Filter.write(self, data)
 
@@ -56,6 +67,8 @@ def parse_apname(apname):
 
     These naming convertions are found in the data so far:
 
+      AP-3
+      AP_CVC-1100Z-01A
       AP-MIB-C701B-01A
       AP-Mott-F4750C
       AP-Mott-F7825Z-01A
@@ -63,6 +76,7 @@ def parse_apname(apname):
       AP-UHS-2-F2900X-01A
       AP-UHS-F6663-01A
       AP-UHS-F7689A-01A
+      AP-KEC-299--03A
 
     Room/hallway types may be guessed by the ending letter of room name/number:
 
@@ -77,15 +91,15 @@ def parse_apname(apname):
     Returns (equipmentBuilding, equipmentFloor, equipmentRoom, equipmentRoomType)
     '''
     site = floor = room = roomtype = None
-    apc = apname.split('-') if apname else ''
+    apc = re.split('[-_]', apname or '')
     if apc[0].upper() != 'AP':
         logger.info('Unconventional AP name: {0}'.format(apname))
     else:
         site = apc[1]
-        if len(apc) > 4:
+        if len(apc) > 4 and apc[3]!='':
             floor = apc[2]
             room = apc[3]
-        else:
+        elif len(apc) > 2:
             room = apc[2]
             floor = room[1] if 'A' <= room[0].upper() < 'Z' else room[0]
         roomtype = {
@@ -95,7 +109,7 @@ def parse_apname(apname):
             "E":         "Electrical room",
             "X":         "Stairwell",
             "Z":         "Hallway"
-            }.get(room[-1].upper(), '')
+            }.get(room[-1].upper(), '') if room else ''
     return dict(
         equipmentBuilding=site,
         equipmentFloor=floor,
