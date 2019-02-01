@@ -52,7 +52,7 @@
 				"BaseRadioMAC"
 			],
 			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
-			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}).+": "{0}.csv" },
+			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}_\\d{2}).+": "{0}.csv" },
 			"file-mode":	"a",
 			"filters":	[ "CiscoInventory.AP" ],
 			"write-header":	true
