@@ -18,7 +18,7 @@
 		{
 			"":		"APs -- Process AP inventory report from Prime",
 			"disabled":	false,
-			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.zip",
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.[cz][is][pv]",
 			"destination":	"/app/var/pi/inventory/ap",
 			"link-folder":	"/app/var/splunk/ap",
 			"delete":	false,
@@ -61,7 +61,7 @@
 		{
 			"":		"APs -- Process disassociated APs after ap-inventory",
 			"disabled":	false,
-			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.zip",
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.[cz][is][pv]",
 			"destination":	"/app/var/pi/inventory/ap",
 			"link-folder":	"/app/var/splunk/ap",
 			"delete":	true,
