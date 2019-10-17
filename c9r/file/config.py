@@ -81,7 +81,7 @@ class Config(object):
         conf_update(self.CONF, conf)
 
     def __getitem__(self, item):
-        conf = getattr(self, 'CONF', None)
+        conf = self.CONF
         return conf if item is None or conf is None else conf[item]
 
     __getattr__ = __getitem__
@@ -100,10 +100,11 @@ class Config(object):
         self.CONF = conf_update(jso.Storage(self.defaults), initconf)
         xf = None
         to_include = list()
-        self.loaded = list()
+        self.loaded = set()
         for xf in self.def_conf+conf:
             try:
                 if isinstance(xf, str):
+                    logger.debug('...loading config {0}'.format(xf))
                     self.load(xf)
                 else:
                     self.update(xf)
@@ -128,9 +129,8 @@ class TextPassword(object):
             clear = b64decode(value)
         except TypeError:
             clear = value
-            value = b64encode(clear)
-        if not value is self.value:
-            logger.debug('Assigning value: {0}'.format(value))
+        value = b64encode(clear)
+        if value != self.value:
             self.value = value
         return clear.decode("utf-8")
     def cleartext(self):
@@ -140,10 +140,12 @@ class TextPassword(object):
         if is_clear is None:
             self.assign(val)
         elif is_clear:
-            self.value = b64encode(val)
-    def __repr__(self):
-        return self.value
+            self.value = b64encode(val.encode())
+    def __str__(self):
+        return self.value.decode()
+    __repr__ = __str__
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testfile('test/config.test')
+    import os
+    os.chdir('tests')
+    os.command('pytest test_config.py')
