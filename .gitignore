@@ -35,3 +35,4 @@ deploy.sh
 *.json-EMPF2
 *.json-NSS2
 *.json-NSSJ1
+config.test.json
