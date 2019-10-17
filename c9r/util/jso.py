@@ -148,7 +148,7 @@ def save_storage(storage, save_to, indent=None):
     '''
     fp = None
     try:
-        fp = open(save_to, 'wb') if isinstance(save_to, str) else save_to
+        fp = open(save_to, 'w') if isinstance(save_to, str) else save_to
         json.dump(storage, fp, indent=indent)
     finally:
         if fp and fp != save_to:
