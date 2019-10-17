@@ -7,7 +7,7 @@ from setuptools import setup
 
 
 setup(name='c9r',
-      version='0.2.1',
+      version='0.2.2',
       description="""Python utility modules in the 'c9r' namespace.""",
       long_description="""
         Utility modules in the 'c9r' namespace, including IP networking, etc.
