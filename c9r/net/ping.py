@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  A Python implementation of PING based on Perl module Net::Ping found on CPAN.
 # -*- coding: utf-8 -*-
 ##
@@ -596,8 +596,9 @@ class Ping:
             # Must have connected very quickly,
             # or else it wasn't very non-blocking.
             #warn "WARNING: Nonblocking connect connected anyway? (sys.platform)"
-        except socket.error, (err, msg):
+        except OSError as ex:
             # Error occurred connecting.
+            err = ex.errno
             if err == EINPROGRESS or (sys.platform == 'MSWin32' and err == EWOULDBLOCK):
                 # The connection is just still in progress.
                 # This is the expected condition.
@@ -648,9 +649,9 @@ class Ping:
                 # Try to connect (could take a long time)
                 self.sock.connect(xsaddr)
                 xerr = 0
-            except socket.error, (err, msg):
+            except OSError as ex:
                 # Notify parent of connect error status
-                xerr = err
+                xerr = ex.errno
             xwrstr = "%d %d" % (os.getpid(), xerr)
             # Force to 16 chars including \n
             xwrstr.ljust(15)
@@ -674,8 +675,8 @@ class Ping:
         xret = 0
         try:
             xret = self.tcp_connect(ip, timeout)
-        except socket.error, (err, msg):
-            if not self.econnrefused and err == errno.ECONNREFUSED:
+        except OSError as ex:
+            if not self.econnrefused and ex.errno == errno.ECONNREFUSED:
                 xret = 1  # "Connection refused" means reachable
         self.sock.close()
         return xret
@@ -728,8 +729,8 @@ class Ping:
             try:
                 xret = self.sock.connect(xsaddr)
                 return xret
-            except socket.error, (err, msg):
-                return (err == ECONNREFUSED and not self.econnrefused)
+            except OSError as ex:
+                return (ex.errno == ECONNREFUSED and not self.econnrefused)
 
         def do_connect_nb():
             # Set O_NONBLOCK property on filehandle
@@ -740,7 +741,8 @@ class Ping:
                 self.sock.connect(xsaddr)
                 # Connection established to remote host
                 xret = 1
-            except socket.error, (err, msg):
+            except OSError as ex:
+                err = ex.errno
                 if err == errno.ECONNREFUSED:
                     xret = 0 if self.econnrefused else 1
                 elif err != errno.EINPROGRESS and (sys.platform != 'MSWin32' or err != errno.EWOULDBLOCK):
@@ -772,7 +774,8 @@ class Ping:
                             # This should set x! to the correct error.
                             try:
                                 self.sock.sysread(xchar,1)
-                            except socket.error, (err, msg):
+                            except OSError as ex:
+                                err = ex.errno
                                 if err == errno.EAGAIN and re.match("/cygwin/i", sys.platform):
                                     err = errno.ECONNREFUSED
 
@@ -932,13 +935,14 @@ class Ping:
                          (from_msg == xmsg))):
                         xret = 1        # It's a winner
                         xdone = 1
-                except socket.error, (err, msg):
+                except OSError as ex:
                     # For example an unreachable host will make recv() fail.
-                        if (not self.econnrefused and
-                            (err == errno.ECONNREFUSED or err == errno.ECONNRESET)):
-                            # "Connection refused" means reachable. Good, continue
-                            xret = 1
-                            xdone = 1
+                    err = ex.errno
+                    if (not self.econnrefused and
+                        (err == errno.ECONNREFUSED or err == errno.ECONNRESET)):
+                        # "Connection refused" means reachable. Good, continue
+                        xret = 1
+                        xdone = 1
             elif timeout <= 0:                 # Oops, timed out
                 xdone = 1
             else:
@@ -948,8 +952,8 @@ class Ping:
                     # Another send worked?  The previous udp packet
                     # must have gotten lost or is still in transit.
                     # Hopefully this new packet will arrive safely.
-                except socket.error, (err, msg):
-                    if (not self.econnrefused and err == errno.ECONNREFUSED):
+                except OSError as ex:
+                    if (not self.econnrefused and ex.errno == errno.ECONNREFUSED):
                         # "Connection refused" means reachable. Good, continue
                         xret = 1
                     xdone = 1
