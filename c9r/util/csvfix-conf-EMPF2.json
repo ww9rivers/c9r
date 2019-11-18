@@ -14,13 +14,14 @@
 	"path":	"/app/var/device-reports",
 	"tasks":
 	{
-		"":	"APs -- Process AP inventory report from Prime",
 		"ap-inventory":
 		{
+			"":		"APs -- Process AP inventory report from Prime",
 			"disabled":	false,
-			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.csv",
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.[cz][is][pv]",
 			"destination":	"/app/var/pi/inventory/ap",
-			"delete":	true,
+			"link-folder":	"/app/var/splunk/ap",
+			"delete":	false,
 			"skip-pass":	"^AP Inventory\\s*$",
 			"end-at":	"^Disassociated AP\\(s\\)",
 			"read-header":	true,
@@ -33,23 +34,68 @@
 				"termID",
 				"operatingSystem",
 				"equipmentSupportGroup",
- 				"manufacturer",
- 				"assetTag",
- 				"Model",
- 				"SerialNumber",
- 				"tier",
- 				"containsSensitiveData",
- 				"primaryFunctionType",
- 				"devicebuilding",
- 				"Ownership",
- 				"equipmentOwner",
- 				"equipmentBuilding",
- 				"equipmentFloor",
- 				"equipmentRoom",
- 				"equipmentRoomType"
+				"manufacturer",
+				"assetTag",
+				"Model",
+				"SerialNumber",
+				"tier",
+				"containsSensitiveData",
+				"primaryFunctionType",
+				"devicebuilding",
+				"Ownership",
+				"equipmentOwner",
+				"equipmentBuilding",
+				"equipmentFloor",
+				"equipmentRoom",
+				"equipmentRoomType",
+				"association",
+				"BaseRadioMAC"
 			],
 			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
-			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}).+": "{0}.csv" },
+			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}_\\d{2}).+": "{0}.csv" },
+			"file-mode":	"a",
+			"filters":	[ "CiscoInventory.AP" ],
+			"write-header":	true
+		},
+		"ap-disassociated":
+		{
+			"":		"APs -- Process disassociated APs after ap-inventory",
+			"disabled":	false,
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.[cz][is][pv]",
+			"destination":	"/app/var/pi/inventory/ap",
+			"link-folder":	"/app/var/splunk/ap",
+			"delete":	true,
+			"skip-pass":	"^Disassociated AP\\(s\\)",
+			"end-at":	"^Autonomous AP Inventory",
+			"read-header":	true,
+			"header":	[
+				"macAddress",
+				"isDhcp",
+				"ipAddress",
+				"commonName",
+				"Category",
+				"termID",
+				"operatingSystem",
+				"equipmentSupportGroup",
+				"manufacturer",
+				"assetTag",
+				"Model",
+				"SerialNumber",
+				"tier",
+				"containsSensitiveData",
+				"primaryFunctionType",
+				"devicebuilding",
+				"Ownership",
+				"equipmentOwner",
+				"equipmentBuilding",
+				"equipmentFloor",
+				"equipmentRoom",
+				"equipmentRoomType",
+				"association",
+				"BaseRadioMAC"
+			],
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}_\\d{2}).+": "{0}.csv" },
 			"file-mode":	"a",
 			"filters":	[ "CiscoInventory.AP" ],
 			"write-header":	true
@@ -69,12 +115,25 @@
 			"rename":	{ "([\\w_]+_\\d{8}).+": "{0}.csv" },
 			"":		"#"
 		},
-		
-		"":	"V2 tasks ------------------------------------------------------------",
-		"Unique_clients_for_Splunk*.*":
+
+		"rogue_aps":
 		{
 			"disabled":	false,
-			"delete":	true,
+			"pattern":	"/app/var/pi/reports/rogue_aps/Rogue_AP_report_for_Splunk_*.csv",
+			"destination":	"/app/var/pi/reports/rogue_aps",
+			"postprocess":	"xz",
+			"skip-till":	"^Last Seen Time,",
+			"rename":	{ "Rogue_AP_report_for_Splunk_(\\d+)_.*": "RogueAPs-{0}.csv" },
+			"file-mode":	"a",
+			"read-header":	true,
+			"write-header":	true
+		},
+		
+		"":	"V2 tasks ------------------------------------------------------------",
+		"Unique_clients_for_Splunk*.*[pv]":
+		{
+			"disabled":	false,
+			"postprocess":	"xz",
 			"filters":	[ "CiscoPI.Wired" ],
 			"destination":	"/app/var/pi/v2/wired_devices",
 			"skip-till":	"^Last Seen,",
@@ -90,7 +149,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk_*.*":
+		"Unique_clients_for_Splunk_*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -119,7 +178,7 @@
 		},
 
 		"":	"V2.1 tasks ----------------------------------------------------------",
-		"Unique[_]clients_for_Splunk*.*":
+		"Unique[_]clients_for_Splunk*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -138,7 +197,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for_Splunk[_]*.*":
+		"Unique_clients_for_Splunk[_]*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,
@@ -165,7 +224,7 @@
 			"file-mode":	"a",
 			"write-header":	true
 		},
-		"Unique_clients_for[_]Splunk_*.*":
+		"Unique_clients_for[_]Splunk_*.*[pv]":
 		{
 			"disabled":	false,
 			"delete":	false,

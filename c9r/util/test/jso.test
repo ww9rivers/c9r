@@ -1,7 +1,0 @@
--*- mode: python -*-
-Module test for c9r.util.filter.csv.IO/.Reader/.Writer
-
-Test 1:
-
->>> from c9r.util import jso
->>> st = jso.Storage([{'a': 'aaa'}, {'b': 'bbb' }])

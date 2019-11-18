@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 $Id: pexssh.py,v 1.2 2014/03/04 20:51:48 weiwang Exp $
 

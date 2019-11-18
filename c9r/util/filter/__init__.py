@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # $Id: __init__.py,v 1.10 2015/04/01 19:57:17 weiwang Exp $
 #
@@ -14,7 +14,7 @@ class Queue(deque):
         try:
             return self.popleft()
         except IndexError:
-            raise(StopIteration())
+            raise StopIteration
 
     def put(self, data):
         self.append(data)
@@ -48,12 +48,14 @@ class Filter(object):
     def flush(self):
         '''Write everything to the next filter.
         '''
+        len = 0
         while True:
             try:
-                self.next_filter.write(self.next())
+                len += self.next_filter.write(next(self))
                 self.count += 1
             finally:
                 break
+        return len
 
     def join(self):
         '''Join therads on the que.
@@ -61,7 +63,7 @@ class Filter(object):
         if self.que != None:
             self.que.join()
 
-    def next(self):
+    def __next__(self):
         '''Get the next data item off the queue.
         '''
         if self.que is None:
@@ -92,10 +94,10 @@ class Filter(object):
         Or written to the next filter.
         '''
         if self.que is None:
-            self.next_filter.write(data)
             self.count += 1
-        else:
-            self.que.put(data)
+            return self.next_filter.write(data)
+        self.que.put(data)
+        return 0
 
     def __call__(self):
         '''Loop through all queued data and write out to the next filter.

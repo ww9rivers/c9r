@@ -1,14 +1,11 @@
-#! /usr/bin/env python
-#
-# $Id: CiscoPI.py,v 1.9 2015/12/04 14:27:14 weiwang Exp $
-#
+#! /usr/bin/env python3
 
 import re
 from time import strftime, strptime
 from c9r.net.mac import MACFormat
 from c9r.util.filter import Filter
 from c9r.pylog import logger
-from cisco.cli.port import nickname
+from c9r.cisco.cli.port import nickname
 
 pi_timeformat = '%a %b %d %H:%M:%S %Z %Y'
 sql_timeformat = "%b %d %Y %I:%M:%S%p"
@@ -25,7 +22,7 @@ class Normalizer(Filter):
     ====
     The class data below may need to be made configurable in the future:
     '''
-    retime = re.compile('\W+')       # 1 days 2 hrs 35 min 55 sec
+    retime = re.compile('(\d+)\s*([a-zA-Z]+)')  # 1 days 2 hrs 35 min 55 sec // 1days2hrs35min 55sec
     reclean = re.compile('[^\w\s]*') # Regex to clean up CSV field
     cleansub = ''
     vendor_map = {
@@ -62,19 +59,19 @@ class Normalizer(Filter):
             if data.get(xk, '') == 'Not Supported':
                 data[xk] = ''
         try:
-            it = iter(self.retime.split(data['LastSessionLength']))
-        except TypeError:
+            it = self.retime.findall(data['LastSessionLength'])
+        except Exception:
             it = []
         sec = 0
         for x in it:
             xsec = 0
             try:
-                ut = next(it)
-                xsec = int(x)*{ 'days': 86400, 'hrs': 3600, 'min': 60, 'sec': 1 }[ut]
+                ui, ut = x
+                xsec = int(ui)*{ 'days': 86400, 'hrs': 3600, 'min': 60, 'sec': 1 }[ut]
             except KeyError:
-                logger.error('Invalid time unit: {0}'.format(ut))
+                logger.error('Invalid time unit: {0}'.format(ui))
             except ValueError:
-                logger.error('Invalid time value: {0}'.format(x))
+                logger.error('Invalid time value: {0}'.format(ut))
             except StopIteration:
                 pass
             sec += xsec
@@ -191,7 +188,7 @@ def test():
     from c9r import app
     class TestApp(app.Command):
         def __call__(self):
-            doctest.testfile('test/cisco.test')
+            doctest.testfile('tests/cisco.test')
     TestApp()()
 
 

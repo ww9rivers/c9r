@@ -1,0 +1,267 @@
+{
+"Version":	"$Id: csvfix-conf.json,v 1.15 2015/12/04 14:49:43 weiwang Exp $",
+"":
+[	"Run 'csvfix.py -h' for configuration details.",
+
+	"Specifically about v2 tasks below:",
+
+	"Order of /header/ need to match those defined in stanzas",
+	"[transform-usertracking-pi] and [transform-wifitracking-pi], found in",
+	"oss/splunk/splunk-nss/apps/mcit-iso-nss/default/transforms.conf",
+	""
+],
+
+	"path":	"/app/var/device-reports",
+	"tasks":
+	{
+		"":	"APs -- Process AP inventory report from Prime",
+		"ap-inventory":
+		{
+			"disabled":	false,
+			"pattern":	"/app/var/pi/inventory/AP_Inventory_for_Splunk_*.zip",
+			"destination":	"/app/var/pi/inventory/ap",
+			"link-folder":	"/app/var/splunk/ap",
+			"delete":	false,
+			"skip-pass":	"^AP Inventory\\s*$",
+			"end-at":	"^Disassociated AP\\(s\\)",
+			"read-header":	true,
+			"header":	[
+				"macAddress",
+				"isDhcp",
+				"ipAddress",
+				"commonName",
+				"Category",
+				"termID",
+				"operatingSystem",
+				"equipmentSupportGroup",
+ 				"manufacturer",
+ 				"assetTag",
+ 				"Model",
+ 				"SerialNumber",
+ 				"tier",
+ 				"containsSensitiveData",
+ 				"primaryFunctionType",
+ 				"devicebuilding",
+ 				"Ownership",
+ 				"equipmentOwner",
+ 				"equipmentBuilding",
+ 				"equipmentFloor",
+ 				"equipmentRoom",
+ 				"equipmentRoomType"
+			],
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"rename":	{ "(AP_Inventory_for_Splunk_\\d{8}).+": "{0}.csv" },
+			"file-mode":	"a",
+			"filters":	[ "CiscoInventory.AP" ],
+			"write-header":	true
+		},
+		
+		"":	"V2 tasks ------------------------------------------------------------",
+		"Unique_clients_for_Splunk*.*":
+		{
+			"disabled":	true,
+			"delete":	true,
+			"filters":	[ "CiscoPI.Wired" ],
+			"destination":	"/app/var/pi/v2/wired_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "EndpointType", "LastSessionLength"
+			],
+			"rename":	{ "Unique_clients_for_Splunk(.+)": "usertracking{0}" },
+			"file-mode":	"a",
+			"write-header":	true
+		},
+		"Unique_clients_for_Splunk_*.*":
+		{
+			"disabled":	true,
+			"delete":	false,
+			"filters":	[ "CiscoPI.Wireless" ],
+			"destination":	"/app/var/pi/v2/wireless_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-clean":	"\\W+",
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "EndpointType", "LastSessionLength",
+
+				"APName", "APMACAddress", "APMapLocation", "SSID",
+				"Profile", "Protocol", "HostName", "CCX", "E2E",
+				"AuthenticationMethod",
+				"GlobalUnique", "LocalUnique", "LinkLocal",
+				"APIPAddress", "ConnectionType",
+				"ConnectedInterface", "AccessTechnologyType"
+			],
+			"rename":	{ "Unique_clients_for_Splunk(.+)": "wifitracking{0}" },
+			"file-mode":	"a",
+			"write-header":	true
+		},
+
+		"":	"V2.1 tasks ----------------------------------------------------------",
+		"Unique[_]clients_for_Splunk*.*":
+		{
+			"disabled":	true,
+			"delete":	false,
+			"filters":	[ "CiscoPI.WiredSQL" ],
+			"destination":	"/app/var/pi/v2.1/wired_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "EndpointType", "LastSessionLength"
+			],
+			"rename":	{ "Unique_clients_for_Splunk(.+)": "usertracking{0}" },
+			"file-mode":	"a",
+			"write-header":	true
+		},
+		"Unique_clients_for_Splunk[_]*.*":
+		{
+			"disabled":	true,
+			"delete":	false,
+			"filters":	[ "CiscoPI.WirelessUMHS" ],
+			"destination":	"/app/var/pi/v2.1/wireless_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-clean":	"\\W+",
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "EndpointType", "LastSessionLength",
+
+				"APName", "APMACAddress", "APMapLocation", "SSID",
+				"Profile", "Protocol", "HostName", "CCX", "E2E",
+				"AuthenticationMethod",
+				"GlobalUnique", "LocalUnique", "LinkLocal",
+				"APIPAddress", "ConnectionType",
+				"ConnectedInterface", "AccessTechnologyType"
+			],
+			"rename":	{ "Unique_clients_for_Splunk(.+)": "wifitracking{0}" },
+			"file-mode":	"a",
+			"write-header":	true
+		},
+		"Unique_clients_for[_]Splunk_*.*":
+		{
+			"disabled":	true,
+			"delete":	false,
+			"filters":	[ "CiscoPI.WirelessGuest" ],
+			"destination":	"/app/var/pi/v2.1/wireless_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-clean":	"\\W+",
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "EndpointType", "LastSessionLength",
+
+				"APName", "APMACAddress", "APMapLocation", "SSID",
+				"Profile", "Protocol", "HostName", "CCX", "E2E",
+				"AuthenticationMethod",
+				"GlobalUnique", "LocalUnique", "LinkLocal",
+				"APIPAddress", "ConnectionType",
+				"ConnectedInterface", "AccessTechnologyType"
+			],
+			"rename":	{ "Unique_clients_for_Splunk(.+)": "wifiguests{0}" },
+			"file-mode":	"a",
+			"write-header":	true
+		},
+
+		"":	"Printers -- Converting from JSON objects to CSV",
+		"printers":
+		{
+			"disabled":	true,
+			"pattern":	"/app/var/run/printers-????-??-??.json",
+			"destination":	"/app/var/run/csv",
+			"delete":	false,
+			"header":	[
+				"ip", "mac", "vendor", "model", "pid", "location", "sysDescr"
+			],
+			"input-format":	"json",
+			"rename":	{ "(.+)": "{0}.csv" },
+			"dialect":	"nix",
+			"write-header":	true
+		},
+		
+		"usertracking*.*":
+		{
+			"disabled":	true,
+			"filters":	[ "CiscoPI.Normalizer" ],
+			"destination":	"/app/var/pi/v1.1/wired_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"write-header":	false
+		},
+		"wifitracking*.*":
+		{
+			"disabled":	true,
+			"filters":	[ "CiscoPI.Normalizer" ],
+			"destination":	"/app/var/pi/v1.1/wireless_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-clean":	"\\W+",
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "LastSessionLength",
+
+				"APName", "APMACAddress", "APMapLocation",
+				"SSID", "Profile", "Protocol", "HostName", "CCX", "E2E",
+				"AuthenticationMethod",
+				"GlobalUnique", "LocalUnique", "LinkLocal",
+
+				"ConnectionType", "ConnectedInterface", "AccessTechnologyType",
+				"APIPAddress", "EndpointType"
+			],
+			"write-header":	false
+		},
+
+		"test-usertracking_*.*":
+		{
+			"disabled":	true,
+			"delete":	false,
+			"filters":	[ "CiscoPI.WiredSQL" ],
+			"destination":	"/app/var/pi/v2.1/wired_devices",
+			"skip-till":	"^Last Seen,",
+			"times":	true,
+			"read-header":	true,
+			"header-fix":	{ "([^A-Z_a-z]+)(\\w+)": "{1}{0}" },
+			"header":	[
+				"LastSeen", "User", "MACAddress", "Vendor",
+				"IPAddress", "DeviceIPAddress", "Port", "VLANID",
+				"State80211", "LastSessionLength"
+			],
+			"timeformat":	"%b %d %Y %I:%M:%S%p",
+			"file-mode":	"a",
+			"write-header":	true
+		},
+
+		"":	" - End of Removed Task List - "
+	},
+
+	"dialects":
+	{
+		"nix":
+		{
+			"quoting":		"QUOTE_ALL",
+			"lineterminator":	"\n"
+		}
+	},
+"":	"--- End ---"
+}

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # $Id: csvio.py,v 1.13 2015/12/11 15:16:47 weiwang Exp $
 #
@@ -12,15 +12,16 @@ from c9r.util.filter import Filter
 class Reader(object):
     '''A buffered reader to allow rewinding a line, with optional /ends/.
     '''
-    def next(self):
+    def __next__(self):
         '''Return the last line if the input is backed up.
         Otherwise, read the next line from file.
         '''
         if self.read:
-            self.line = self.input.next()
+            self.line = next(self.input)
         else:
             self.read = True
         line = self.line
+        line = line.decode('utf-8') if isinstance(line, bytes) else line
         if self.ends and self.ends.match(line):
             logger.debug('Ends proessing at: {0})'.format(line))
             raise StopIteration
@@ -38,7 +39,7 @@ class Reader(object):
 
         This allows the self.input to be a file or a filter.
         '''
-        if isinstance(self.input, basestring): # Assuming a filename
+        if isinstance(self.input, str): # Assuming a filename
             self.input = open(self.input)
         else:
             self.input = self._do_('open')
@@ -52,7 +53,7 @@ class Reader(object):
             return fact()
         return self.input
 
-    def __init__(self, input_file, ends):
+    def __init__(self, input_file, ends=None):
         '''Initial this reader with an input, which is requried to have a
         next() function.
         '''
@@ -141,7 +142,7 @@ def register_dialects(dialects):
     '''
     if dialects is None:
         return
-    for name, params in dialects.iteritems():
+    for name, params in dialects.items():
         quoting = params.get('quoting')
         if quoting and not isinstance(quoting, int):
             params['quoting'] = getattr(csv, quoting)

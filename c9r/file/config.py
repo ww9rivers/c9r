@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 #       $Id: config.py,v 1.7 2015/12/04 14:55:28 weiwang Exp $
 '''
@@ -9,7 +9,7 @@ This program is licensed under the GPL v3.0, which is found at the URL below:
 import os
 import os.path
 from base64 import b64decode, b64encode
-from c9r.util import jso, python
+from c9r.util import jso
 from c9r.pylog import logger
 
 
@@ -81,12 +81,12 @@ class Config(object):
         conf_update(self.CONF, conf)
 
     def __getitem__(self, item):
-        conf = getattr(self, 'CONF', None)
+        conf = self.CONF
         return conf if item is None or conf is None else conf[item]
 
     __getattr__ = __getitem__
 
-    def __init__(self, conf=[], initconf=None, update=None):
+    def __init__(self, conf=None, initconf=None, update=None):
         '''Initialize this object, loading all configuration.
 
         The last item in the list(def_conf+conf) is used for saving this obejct.
@@ -96,15 +96,15 @@ class Config(object):
         /initconf/      Initial configuration, either a dict or an object with dict().
         /update/        Optional update to initconf and conf file(s).
         '''
-        if conf != None:
-            conf = list(conf if isinstance(conf, list) else [conf])
+        conf = [] if conf is None else list(conf if isinstance(conf, list) else [conf])
         self.CONF = conf_update(jso.Storage(self.defaults), initconf)
         xf = None
         to_include = list()
-        self.loaded = list()
+        self.loaded = set()
         for xf in self.def_conf+conf:
             try:
-                if python.is_string(xf):
+                if isinstance(xf, str):
+                    logger.debug('...loading config {0}'.format(xf))
                     self.load(xf)
                 else:
                     self.update(xf)
@@ -115,7 +115,7 @@ class Config(object):
                 logger.debug('Exception {0} loading config {1}'.format(ex, xf))
         for xf in to_include:
             self.include(xf)
-        self.save_to = xf if python.is_string(xf) else None
+        self.save_to = xf if isinstance(xf, str) else None
         self.update(update)
 
 
@@ -129,11 +129,10 @@ class TextPassword(object):
             clear = b64decode(value)
         except TypeError:
             clear = value
-            value = b64encode(clear)
-        if not value is self.value:
-            logger.debug('Assigning value: {0}'.format(value))
+        value = b64encode(clear)
+        if value != self.value:
             self.value = value
-        return clear
+        return clear.decode("utf-8")
     def cleartext(self):
         return self.assign(self.value)
     def __init__(self, val, is_clear=None):
@@ -141,10 +140,12 @@ class TextPassword(object):
         if is_clear is None:
             self.assign(val)
         elif is_clear:
-            self.value = b64encode(val)
-    def __repr__(self):
-        return self.value
+            self.value = b64encode(val.encode())
+    def __str__(self):
+        return self.value.decode()
+    __repr__ = __str__
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testfile('test/config.test')
+    import os
+    os.chdir('tests')
+    os.command('pytest test_config.py')

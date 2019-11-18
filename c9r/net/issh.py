@@ -10,7 +10,7 @@ import paramiko as pyssh
 import socket
 import time
 import base64, re, os
-from cStringIO import StringIO
+from io import StringIO
 from c9r.app import Command
 from c9r.file.config import Config
 from c9r.pylog import logger
@@ -175,7 +175,7 @@ class SecureShell(object):
                     if pattern_list.index_eof >= 0:
                         return pattern_list.index_eof
                     raise EOF()
-                sio = StringIO(rbuf)
+                sio = StringIO(rbuf.decode())
                 # Search for any match of the patterns
                 mx = None
                 while mx is None:
@@ -280,7 +280,7 @@ class SecureShell(object):
             #1. Try the given pw as a key:
             rawpw = self.config(pw)
             #2. If wrong, treat it as Base64 encoded:
-            rawpw = base64.b64decode(pw if rawpw is None else rawpw)
+            rawpw = base64.b64decode(pw if rawpw is None else rawpw).decode()
         except:
             #3. Else, assume it is clear text:
             rawpw = pw
@@ -318,14 +318,16 @@ class SecureShell(object):
         logger.debug('Default profile.category = {0}.'.format(self.default))
         self.newline = re.compile(self.config('newline', "[\r\n]+"))
         sshc = pyssh.SSHClient()
-        sshc.load_system_host_keys()
-        sshc.load_host_keys(os.path.expanduser(self.config('known_hosts')))
+        known_hosts = self.config('known_hosts')
+        if known_hosts != None:
+            sshc.load_system_host_keys()
+            sshc.load_host_keys(os.path.expanduser(known_hosts))
         sshc.set_missing_host_key_policy(
             {
                 'accept': AcceptKeyPolicy,
                 'add': pyssh.client.AutoAddPolicy,
                 'warn': pyssh.client.WarningPolicy,
-                }.get(self.config('missing_key'), pyssh.client.RejectPolicy)())
+            }.get(self.config('missing_key'), pyssh.client.RejectPolicy)())
         self.sshc = sshc
         self.channel = None
         self.flush()
@@ -364,8 +366,8 @@ def main():
     ssh = SecureShell()
     results = ssh.run(cmd.args[1:], host=host)
     logger.debug('Got {0} result(s)'.format(len(results)))
-    for cmd,output in results.iteritems():
-        print cmd
+    for cmd,output in results.items():
+        print(cmd)
         for line in StringIO(output):
             print('\t'+line.rstrip())
 

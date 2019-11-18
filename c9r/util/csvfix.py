@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 #
 # $Id: csvfix.py,v 1.30 2016/06/06 15:36:22 weiwang Exp $
 """
@@ -63,6 +63,8 @@ class CSVFixer(Command):
       header-clean  Regex for removing special characters. Defaults to '\\W+'.
       header-fix    Optional dict used to fix the header.
       input-format  Format of input data: "csv" or "json". Defaults to "csv".
+      link-folder   A folder for the "destination", in case files are removed there,
+                    for example, by MiShare after files are transported.
       pattern       Optional filename template - This overwrites the pattern in the
                     task key.
       read-header   True, if CSV column header is to be read from first line in data.
@@ -71,7 +73,7 @@ class CSVFixer(Command):
       skip-line     Skip a given number of lines.
       skip-pass     Skip pass a pattern.
       skip-till     Skip till a pattern.
-      times         Set to true to keep time stamps on files.
+      times         Set to true to keep time stamps on files. Defaults to false.
       write-header  True, if CSV column header is to be written to output (first line).
                     Defaults to false.
 
@@ -147,7 +149,7 @@ class CSVFixer(Command):
                 }
             }
         }
-    def_conf = '/opt/miops/etc/csvfix-conf.json'
+    def_conf = '/app/miops/etc/csvfix-conf.json'
 
     def __call__(self):
         '''Go through list of files to monitor and fix them.
@@ -156,7 +158,7 @@ class CSVFixer(Command):
         '''
         os.chdir(self.config('path', '.'))
         tasks = self.config('tasks', {})
-        for pat,cfg in tasks.iteritems():
+        for pat,cfg in tasks.items():
             jobqu.put((cfg, pat))
         tasks = min(self.config('threads', 10), jobqu.qsize())
         cwd = os.getcwd()
@@ -205,8 +207,8 @@ class InvalidInputFormat(Exception):
 class JSOReader(object):
     '''Read from the given in_file and parse each line into a dict as in JSON object.
     '''
-    def next(self):
-        jsobj = json.loads(self.in_file.next())
+    def __next__(self):
+        jsobj = json.loads(next(self.in_file))
         logger.debug(str(jsobj))
         return jsobj
 
@@ -245,8 +247,8 @@ class Pipeline(object):
         Returns number of rows (records) processed in the CSV file.
         '''
         # Open files if they are given as file names:
-        fin = csvio.Reader(open(fnr, 'rU') if isinstance(fnr, basestring) else fnr, self.ends)
-        fout = open(fnw, self.file_mode) if isinstance(fnw, basestring) else fnw
+        fin = csvio.Reader(open(fnr, 'r') if isinstance(fnr, str) else fnr, self.ends)
+        fout = open(fnw, self.file_mode) if isinstance(fnw, str) else fnw
         write_header = self.write_header and (fout.tell() == 0)
         # Skip non-data if so configured:
         skip = dict({'line': 0, 'pass': 0, 'till': 0})
@@ -254,9 +256,11 @@ class Pipeline(object):
         lineno = 0
         while skip['more']:
             try:
-                line = fin.next()
+                line = next(fin)
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8')
             except StopIteration:
-                logger.warn('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
+                logger.warning('Unexpected end-of-file when skiping to data in {0}:{1}'.format(fnr, lineno))
                 return 0
             if skip['till'] and skip['till'].match(line):
                 logger.debug('Skip-till matching line {0}: {1}'.format(lineno+1, line))
@@ -274,9 +278,10 @@ class Pipeline(object):
         logger.debug('{0}: {1}to output CSV header: {2}'.format(fnw, '' if write_header else 'not ', header))
         if self.read_header or header is None:
             try:
-                rheader = [ self.header_clean.sub('', x) for x in fin.next().split(',') ]
+                rheader = [ self.header_clean.sub('', x) for x in next(fin).split(',') ]
             except Exception as ex:
-                logger.warn('Unexpected error when reading CSV header in {0}:{1}'.format(fnr, lineno))
+                logger.debug('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
+                logger.warning('Unexpected error when reading CSV header in {0}:{1}'.format(fnr, lineno))
                 return 0
             lineno += 1
             logger.debug('Read header: {0}'.format(rheader))
@@ -288,7 +293,7 @@ class Pipeline(object):
                         try:
                             col = fmt.format(*mx.groups())
                         except Exception as ex:
-                            logger.warn('Exception fixing "{0}" with "{1}" and groups = {2}'.format(col, fmt, mx.groups()))
+                            logger.warning('Exception fixing "{0}" with "{1}" and groups = {2}'.format(col, fmt, mx.groups()))
                     nhdr.append(col)
                 rheader = nhdr
             logger.debug('Header fixed: {0}'.format(rheader))
@@ -306,22 +311,22 @@ class Pipeline(object):
                     klass = getattr(mod, cname)
                     filter1 = klass(filter1).open()
             except ImportError:
-                logger.warn('ImportError for filter {0}'.format(fltr))
+                logger.warning('ImportError for filter {0}'.format(fltr))
                 raise
             csvreader = self.ireader(fin, fieldnames=(rheader or header))
             while True:
                 try:
-                    line = csvreader.next()
+                    line = next(csvreader)
                     lineno += 1
                     filter1.write(line)
                 except StopIteration:
                     break
                 except Exception as ex:
-                    logger.warn('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
+                    logger.warning('{2}: {0} (lineno = {1})'.format(ex, lineno, type(ex).__name__))
                     logger.debug('\tline = {0})'.format(line))
-                    print '-'*60
+                    print('-'*60)
                     traceback.print_exc(file=sys.stdout)
-                    print '-'*60
+                    print('-'*60)
                     #logger.debug(traceback.format_tb(sys.exc_info()))
             if True:
                 logger.debug('Closing filter 1: {0}, lines = {1}, fout size = {2}'.format(type(filter1).__name__, lineno, fout.tell()))
@@ -349,13 +354,13 @@ class Pipeline(object):
             skipping = config.get('skip-'+sk, 0) # 0 also means False
             if skipping:
                 skip['more'] = True
-                skip[sk] = re.compile(skipping) if isinstance(skipping, basestring) else skipping
+                skip[sk] = re.compile(skipping) if isinstance(skipping, str) else skipping
         self.skip = skip
         self.filters = config.get('filters', [])
         self.header = config.get('header', None)
-        self.header_clean = re.compile(config.get('header-clean', '\W+'))
+        self.header_clean = re.compile(config.get('header-clean', r'\W+'))
         self.header_fix = [ (re.compile(xk),xv) for xk,xv
-                            in config.get('header-fix', {}).iteritems() ]
+                            in config.get('header-fix', {}).items() ]
         self.read_header = config.get('read-header', False)
         self.write_header = config.get('write-header', False)
         self.file_mode = config.get("file-mode", 'w')
@@ -378,7 +383,7 @@ def atexit_delete(filename):
     try:
         os.unlink(filename)
     except Exception as ex:
-        logger.warn('CSVFixer: Exception "{0}" deleting file "{1}".'.format(ex, filename))
+        logger.warning('CSVFixer: Exception "{0}" deleting file "{1}".'.format(ex, filename))
 
 def atexit_process(filename, act):
     '''Post process a file with given /act/.
@@ -393,10 +398,8 @@ def atexit_process(filename, act):
         ]):
         cmd = (act if isinstance(act, list) else [act])+[filename]
         try:
-            stdout = subprocess.check_output(cmd)
-            if stdout:
-                logger.info(stdout)
-        except CalledProcessError as err:
+            subprocess.check_call(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
             logger.error('Error from command {0}\n{1}'.format(cmd, err.output))
         return
     logger.debug('Unknown postprocess action: "{0}" "{1}"'.format(act, filename))
@@ -418,10 +421,11 @@ def task(cwd):
             continue
         pattern = config.get('pattern', pattern) # 'pattern' may be configured inside task
         dest = config.get('destination', cwd)
+        linkfolder = config.get('link-folder')
         forge_path(dest)
         process = Pipeline(config)
         keep_times = config.get('times', False)
-        rename = [ (re.compile(xk),xv) for xk,xv in config.get('rename', {}).iteritems() ]
+        rename = [ (re.compile(xk),xv) for xk,xv in config.get('rename', {}).items() ]
         logger.debug('CSVFixer: task = %s, destination = "%s"' % (pattern, dest))
         for zipfn in glob.glob(pattern):
             stinfo = os.stat(zipfn)
@@ -437,9 +441,9 @@ def task(cwd):
                     ziplist = zipf.namelist()
                     logger.debug('CSVFixer: Found list in zip file = %s' % (format(ziplist)))
                 except BadZipfile:
-                    logger.warn('CSVFixer: zip file "%s" is bad.' % (zipfn))
+                    logger.warning('CSVFixer: zip file "%s" is bad.' % (zipfn))
                     continue
-            fwpath = ''
+            fbasename = fwpath = ''
             for fn in ziplist:
                 if fwpath == '' or config.get('file-mode') != 'a':
                     fwname = fn
@@ -449,9 +453,10 @@ def task(cwd):
                             try:
                                 fwname = fmt.format(*mx.groups())
                             except Exception as ex:
-                                logger.warn('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
+                                logger.warning('Exception fixing "{0}" with "{1}" and groups = {2}'.format(fn, fmt, mx.groups()))
                             break
-                    fwpath = os.path.join(dest, os.path.basename(fwname))
+                    fbasename = os.path.basename(fwname)
+                    fwpath = os.path.join(dest, fbasename)
                 logger.debug('Processing file "{0}" to "{1}"'.format(fn, fwname))
                 lines = process(open(fn, 'r') if zipf is None else zipf.open(fn, 'r'), fwpath)
                 logger.debug('{0} lines processed in file "{1}"'.format(lines, fn))
@@ -473,6 +478,11 @@ def task(cwd):
             if fwpath != '' and config.get('delete-empty', True) and os.stat(fwpath).st_size < 1:
                 os.unlink(fwpath)
                 logger.debug('Deleted empty output file "{0}"'.format(fwpath))
+            elif linkfolder:
+                try:
+                    os.link(fwpath, os.path.join(linkfolder, fbasename))
+                except Exception as err:
+                    logger.error('Error link file "{0}" to folder {1}: {2}'.format(fwpath, linkfolder, err))
         jobqu.task_done()
         logger.debug('Task "{0}" completed'.format(pattern))
 

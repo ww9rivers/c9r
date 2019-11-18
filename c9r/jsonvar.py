@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 $Id: jsonvar.py,v 1.2 2014/03/04 20:51:06 weiwang Exp $
 
@@ -12,7 +12,7 @@ with:
 '''
 
 import json
-from gluon.dal import DAL, Field, Table
+from pydal import DAL, Field
 
 
 class JsonVar:
@@ -48,6 +48,10 @@ class JsonVar:
         '''
         Delete a variable and its value from the store.
         '''
+        try:
+            del self.cache[varname]
+        except:
+            pass
         self.db(self.db.variable.name == varname).delete()
 
     def get(self, varname):

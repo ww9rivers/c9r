@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# $Id: app.py,v 1.13 2016/06/06 18:15:15 weiwang Exp $
 '''
 This program is licensed under the GPL v3.0, which is found at the URL below:
 http://opensource.org/licenses/gpl-3.0.html
@@ -93,6 +92,9 @@ class Command(object):
     def log_info(self, msg):
         logger.info(msg)
 
+    def log_warn(self, msg):
+        logger.warning(msg)
+
     def usage(self, params=None):
         """
         Print the __doc__ string of this app. An app subclassing c9r.app.Command should
@@ -117,15 +119,15 @@ class Command(object):
     def __call__(self):
         assert False, "Application module needs to define __call__()."
 
-    def __init__(self, short_opts=0, long_opts=0):
+    def __init__(self, short_opts=0, long_opts=0, short_extra='', long_extra=[]):
         '''
         '''
         global logger
         try:
-            opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or self.short_opt, long_opts or self.long_opt)
-        except getopt.GetoptError, err:
+            opts, args = getopt.gnu_getopt(sys.argv[1:], short_opts or (self.short_opt+short_extra), long_opts or (self.long_opt+long_extra))
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             self.usage()
             sys.exit(1)
 
@@ -133,7 +135,7 @@ class Command(object):
             Command.CONF = Thingy(self.defaults)
         self.args = args
         conffile = self.def_conf
-        if isinstance(conffile, basestring):
+        if isinstance(conffile, str):
             conffile = list([conffile])
         elif not isinstance(conffile, list):
             conffile = list([])
@@ -196,4 +198,4 @@ class Command(object):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testfile('test/app.test')
+    doctest.testfile('tests/app.test')
